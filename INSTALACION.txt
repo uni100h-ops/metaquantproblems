@@ -1,0 +1,178 @@
+METAQUANT FORGE — INSTALACIÓN PASO A PASO
+Preparado el 20 de octubre de 2026. Python 3.12.
+
+0. QUÉ RECIBES
+Descomprime el ZIP. La carpeta metaquant-forge contiene el proyecto completo.
+No necesitas reutilizar el servidor AMD ni contratar una GPU permanente.
+Render: web + API. Modal: NVIDIA L4 bajo demanda + referencia CPU.
+Fireworks: modelo Meta Llama 3.3 70B para formular y explicar problemas.
+No necesitas una API de Meta para ejecutar los ejemplos predefinidos.
+
+1. SUBIR A GITHUB
+1) Abre https://github.com/new con tu cuenta.
+2) Crea un repositorio nuevo, por ejemplo uni100h-ops/metaquant-forge.
+3) En la carpeta extraída ejecuta desde WSL (ajusta la ruta de Windows):
+   cd /mnt/c/Users/TU_USUARIO/Downloads/metaquant-forge
+   git init
+   git add .
+   git commit -m "Initial MetaQuant Forge application"
+   git branch -M main
+   git remote add origin https://github.com/uni100h-ops/metaquant-forge.git
+   git push -u origin main
+   GitHub puede solicitar autenticación. Usa GitHub CLI, su gestor de
+   credenciales o un token; la contraseña normal no sirve para git push.
+4) Alternativa sin terminal: usa GitHub Desktop y Publish repository.
+   También puedes subir los archivos/carpetas desde Add file > Upload files.
+5) render.yaml debe quedar en la RAÍZ del repositorio junto a requirements.txt,
+   modal_app.py, server/, optimizer/ y dist/. No subas el ZIP sin extraer.
+6) No subas claves, .env, .modal.toml, .venv ni archivos de credenciales.
+
+2. CREAR Y DESPLEGAR LA GPU EN MODAL
+1) Abre https://modal.com/ y crea tu cuenta (Starter).
+2) Revisa Billing y el saldo de créditos. Modal exige un método de pago válido
+   para usar GPU incluso si tienes créditos. Revisa los límites/alertas que
+   ofrezca tu plan; la concurrencia de una GPU no es un límite de dinero.
+3) En WSL, dentro de metaquant-forge, con Python 3.12 instalado:
+   python3.12 -m venv .venv
+   source .venv/bin/activate
+   python -m pip install -r requirements.txt
+   python -m modal setup
+   Sigue el enlace de autenticación y elige tu workspace de Modal.
+4) Despliega el worker:
+   python -m modal deploy modal_app.py
+   Espera la construcción de la imagen CUDA y la confirmación de despliegue.
+   No cierres antes de que termine. La aplicación se llama metaquant-forge
+   y la función remota compare_job. No necesita una URL pública.
+5) Obtén un token de API del MISMO workspace desde los ajustes de Modal.
+   Si usas el token creado por modal setup, consulta privadamente ~/.modal.toml
+   en WSL: token_id y token_secret. No pegues ese archivo en GitHub ni chats.
+   Guarda ambos valores para Render. La configuración usa el entorno default
+   de Modal; despliega ahí y no uses un entorno alternativo en esta versión.
+6) L4 está preconfigurada, máximo un contenedor y mínimo cero; tras la actividad
+   se mantiene 20 s caliente. También se facturan carga y recursos CPU/RAM.
+   Para probar T4 (menor tarifa GPU), cambia gpu='L4' por gpu='T4' y repite
+   modal deploy. No presupongas que cuesta menos por trabajo: puede tardar más.
+   Conserva L4 como configuración inicial; falta medir el rendimiento real.
+
+3. ACTIVAR LOS MODELOS META
+1) Abre https://console.fireworks.ai/ y crea o inicia sesión en tu cuenta.
+2) En API Keys crea una clave para esta aplicación y cópiala una sola vez.
+3) Confirma créditos/facturación y acceso al modelo:
+   https://fireworks.ai/models/fireworks/llama-v3p3-70b-instruct
+4) Render utilizará estas variables:
+   META_API_KEY = tu clave de Fireworks
+   META_API_BASE_URL = https://api.fireworks.ai/inference/v1
+   META_MODEL = accounts/fireworks/models/llama-v3p3-70b-instruct
+   Son llamadas reales a un modelo de Meta servido por Fireworks.
+5) Si recibes acceso a otro modelo del evento, cambia proveedor/modelo SOLO
+   si ofrece chat completions compatible, JSON mode y los campos usados aquí.
+   No basta con poner cualquier URL: server/meta_ai.py es el adaptador.
+
+4. INSTALAR EN RENDER CON EL BLUEPRINT
+1) Entra en https://dashboard.render.com/.
+2) Conecta GitHub y autoriza el repositorio nuevo.
+3) New + > Blueprint. Selecciona metaquant-forge, rama main.
+4) Render leerá render.yaml. Si no lo encuentra, revisa que esté en la raíz.
+5) Antes de crear el servicio, rellena las variables marcadas sync:false:
+   MODAL_TOKEN_ID       token_id del paso 2
+   MODAL_TOKEN_SECRET   token_secret del paso 2
+   META_API_KEY         clave del paso 3
+   SESSION_SECRET se genera automáticamente; no lo cambies entre reinicios.
+6) Revisa el plan. El YAML usa free para empezar. Para una demo que permanezca
+   despierta elige un plan de pago en el panel, con su precio actual.
+   Render free puede suspenderse; no es adecuado para prometer servicio continuo.
+7) Confirma el Blueprint. Espera a que build/deploy finalicen y abre la URL
+   HTTPS *.onrender.com asignada por Render.
+8) Comprueba /health en esa URL: debe responder status=ok.
+9) En la web debe figurar Modal configurado y Meta AI lista. Esto significa
+   claves presentes, no que el proveedor haya validado ya su saldo o permisos.
+10) Revisa Logs si falla. Nunca publiques valores de claves al pedir ayuda.
+
+ALTERNATIVA: NEW WEB SERVICE MANUAL
+Runtime: Python; rama main; Root Directory: vacío (si subiste a raíz).
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn server.main:app --host 0.0.0.0 --port $PORT --workers 1
+Health Check Path: /health
+PYTHON_VERSION=3.12.11
+COOKIE_SECURE=1
+SESSION_SECRET: genera un secreto largo; por ejemplo, en WSL ejecuta:
+   python -c 'import secrets; print(secrets.token_hex(32))'
+Configura además las cinco variables de Modal/Meta indicadas arriba.
+Una sola instancia Render y un worker. No instales las dependencias GPU allí.
+
+5. PRIMERA PRUEBA COMPLETA
+1) Abre la aplicación usando HTTPS.
+2) Abre el JSON y empieza con un caso pequeño para verificar la conexión:
+   {"kind":"custom","matrix":[[-1,2],[2,-3]],"offset":0}
+3) Pulsa Validar JSON y Ejecutar ambos motores.
+4) Espera el arranque CUDA; los resultados CPU y GPU aparecen por separado.
+5) En Datos técnicos verifica NVIDIA CUDA, cpu_fallback=false y tres trials
+   por motor en la descarga. El objetivo de [1,1] en ese ejemplo es 0;
+   no se impone que esa sea la solución obtenida.
+6) Pulsa Explicar con Meta AI para verificar Fireworks.
+7) Prueba Formular con: "Crea una prueba sintética de 512 eventos de festival
+   para repartir en dos sesiones, sin restricciones de capacidad".
+   Revisa el JSON antes de ejecutar.
+8) Luego prueba los escenarios de 2048/3072/4096 decisiones. La complejidad
+   se conserva; la duración y calidad pueden cambiar con la GPU y semillas.
+9) Descarga JSON/CSV. Los trabajos no sobreviven a un reinicio de Render.
+
+6. DOMINIO .COM
+Propuesta: metaquantforge.com. Marca utilizada: MetaQuant Forge.
+Consulta RDAP de Verisign el 20/10/2026: HTTP 404 (sin registro encontrado).
+Una segunda consulta recibió HTTP 503 (servicio temporalmente no disponible).
+La primera consulta no reserva el dominio ni garantiza disponibilidad/precio
+en el checkout.
+Verifica y compra si sigue libre en tu registrador, por ejemplo:
+https://www.namecheap.com/domains/registration/results/?domain=metaquantforge.com
+No se ha comprado ni reservado nada en esta entrega.
+1) En Render, servicio > Settings > Custom Domains > Add Custom Domain.
+2) Añade metaquantforge.com y www.metaquantforge.com si quieres ambos.
+3) Copia al registrador EXACTAMENTE los registros que Render muestre para
+   cada nombre. No inventes una IP ni reutilices DNS de AMD-Quant.
+4) Pulsa Verify en Render; espera propagación y certificado HTTPS.
+5) Prueba ambos nombres y elige el dominio canónico en la configuración.
+Documentación: https://render.com/docs/custom-domains
+Puedes cambiar de dominio sin tocar código: las rutas API son relativas.
+
+7. CRÉDITOS: QUÉ PEDIR Y DÓNDE
+A) MODAL STARTER — 30 USD/mes de créditos según su tarifa publicada.
+   https://modal.com/pricing
+   Crea la cuenta Starter, revisa el saldo en Billing y el método de pago
+   requerido para GPU. No necesitas solicitar el programa de startups.
+   Referencia actual L4: 0,000222 USD/s (~0,80 USD/h solo GPU), más CPU/RAM,
+   carga del contenedor, tiempo caliente y otros cargos que correspondan.
+
+B) HACKATHON — Modal anuncia 100 USD y Fireworks 25 USD PARA PARTICIPANTES
+   SELECCIONADOS, no para todos los inscritos automáticamente.
+   https://cerebralvalley.ai/e/meta-ai-developer-hackathon
+   1. Solicita la participación en Apply Now si no lo has hecho.
+   2. Cuando seas aceptado, consulta correo/portal y canales de los socios.
+   3. Pide el procedimiento de activación de Modal y Fireworks usando el
+      correo de inscripción y el identificador de workspace/cuenta.
+   4. Comprueba el crédito aplicado antes de ejecutar comparaciones grandes.
+   No se ha encontrado un código público de canje ni se ha solicitado por ti.
+   El plazo publicado de solicitudes es el 25 de octubre, 23:59 ET, o antes
+   si se cubren las plazas; el evento puede cambiar las fechas.
+
+C) MODAL PARA STARTUPS — solicitud aparte, sujeta a requisitos de financiación.
+   https://modal.com/startups
+   Entra en Apply Now y aporta los datos reales de empresa, financiación,
+   producto y uso previsto. No asumas que un proyecto individual cumple los
+   requisitos ni que este programa se acumule con el crédito del hackathon.
+
+8. ACTUALIZACIONES Y SOLUCIÓN DE PROBLEMAS
+- Cambios en dist/ o server/: git push; Render desplegará según la opción
+  de auto deploy que tengas activada, o usa Manual Deploy.
+- Cambios en optimizer/ o modal_app.py: repite modal deploy además del push.
+- Modal computation failed: revisa el job en Modal, saldo, CUDA, workspace,
+  nombre de app/función y el timeout de 600 s. Comprueba que desplegaste.
+- Error del modelo: revisa clave, saldo y model ID en Fireworks.
+- GPU no configurada: faltan variables en Render; guarda y vuelve a desplegar.
+- Job expired: el proceso se reinició o se descartó el resultado; vuelve a
+  ejecutar, tras comprobar que no queda un job anterior activo en Modal.
+- Timeout del navegador no equivale a cancelación: la web sigue consultando
+  el identificador existente; no hace otro lanzamiento automáticamente.
+- Cancelar solicita detener el contenedor remoto; puede tardar unos segundos.
+- Para quitar la aplicación: detén/elimina el servicio Render y la app Modal
+  desde sus paneles, y revoca sus tokens si ya no se necesitan.

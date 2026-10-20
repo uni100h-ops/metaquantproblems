@@ -1,0 +1,7 @@
+-r requirements.txt
+pytest==9.1.1
+numpy==2.5.4
+dimod==0.12.22
+dwave-samplers==1.8.0
+PyYAML==6.0.3
+jsonschema==4.26.0

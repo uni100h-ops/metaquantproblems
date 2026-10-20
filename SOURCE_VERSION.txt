@@ -1,0 +1,6 @@
+Base: uni100h-ops/amd-quant.com
+Commit: 65c3b9f1e23884469c0f7105ab8a62d45f678412 (2026-10-19)
+Live index.html, app.js, i18n.js and style.css matched this commit on 2026-10-20.
+Preserved: parallel isolated CPU/GPU processes; three runs; independent energy checks; per-engine completion; validation; exports.
+Replaced: notebook polling, ROCm guard, manual renewal, visit-email loop, UI and example catalogue.
+New: NVIDIA CUDA / Modal, Meta model problem formulation and explanation, blue/white interface.
