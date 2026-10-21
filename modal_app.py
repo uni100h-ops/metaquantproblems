@@ -11,10 +11,19 @@ image=(modal.Image.debian_slim(python_version='3.12')
                     'dwave-samplers==1.8.0','simulated-bifurcation==2.0.0')
        .env({'OMP_NUM_THREADS':'1','OPENBLAS_NUM_THREADS':'1','MKL_NUM_THREADS':'1'})
        .add_local_dir(ROOT/'optimizer',remote_path='/root/optimizer'))
+
+# Import the CUDA library during container initialization, before Modal starts
+# handling inputs. It is deliberately not required on the deployment computer.
+# Do not initialize CUDA here; worker verification below still runs on the GPU.
+with image.imports():
+    import torch
+
 updates=modal.Dict.from_name('metaquant-forge-progress',create_if_missing=True)
 _worker_ready=False
 
-@app.function(image=image,gpu='L4',cpu=4,memory=16384,timeout=600,
+# Fall back to T4 capacity when L4 workers are unavailable. Both run the same
+# CUDA solvers; hardware() reports the actual GPU, with no CPU substitution.
+@app.function(image=image,gpu=['L4','T4'],cpu=4,memory=16384,timeout=600,
               scaledown_window=300,min_containers=0,max_containers=1,retries=0)
 def compare_job(job_id:str,spec_data:dict,seed:int):
     global _worker_ready
