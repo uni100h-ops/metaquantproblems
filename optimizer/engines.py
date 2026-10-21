@@ -58,7 +58,7 @@ def hardware():
             'gpu_memory_bytes': torch.cuda.get_device_properties(0).total_memory,
             'gpu_architecture': getattr(torch.cuda.get_device_properties(0), 'gcnArchName', None),
             'traditional_device': 'CPU', 'cpu_architecture': platform.machine(),
-            'torch_threads': THREADS, 'torch_version': torch.__version__,
+            'torch_threads': THREADS, 'torch_version': str(torch.__version__),
             'cuda_version': torch.version.cuda, 'sb_version': version('simulated-bifurcation'),
             'classical_package': 'dwave-samplers', 'classical_version': version('dwave-samplers'),
             'numpy_version': np.__version__, 'python_version': platform.python_version()}
@@ -176,8 +176,9 @@ def compare(p: Problem, seed=2026, progress=None, cancelled=None, partial=None):
     cancelled = cancelled or (lambda: False)
     progress = progress or (lambda stage: None)
     started = time.perf_counter()
-    progress('warming_up')
+    if not _warmed:progress('warming_up')
     warmup_ms = warmup()
+    progress('running')
     engines = {}
     # Both bundles start independently in warm, persistent processes.
     from .live import run_bundles

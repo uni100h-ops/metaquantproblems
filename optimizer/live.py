@@ -27,7 +27,8 @@ def prepare():
             executor=ProcessPoolExecutor(max_workers=1,mp_context=context,
                 initializer=initialize,initargs=(name,event))
             _pools[name]=(executor,event)
-        for executor,event in _pools.values(): executor.submit(ready).result(timeout=180)
+        ready_futures=[executor.submit(ready) for executor,event in _pools.values()]
+        for future in ready_futures:future.result(timeout=180)
     except BaseException:
         close()
         raise
