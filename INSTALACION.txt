@@ -1,0 +1,44 @@
+METAQUANT PROBLEMS — DESPLEGAR DESDE WINDOWS POWERSHELL
+Actualizado: 21 de octubre de 2026.
+
+Este ZIP contiene el proyecto completo con las correcciones del parche
+Modal Streaming Fix. No necesita copiarse sobre otra carpeta.
+
+1. Guarda el ZIP en Descargas y usa Extraer todo.
+2. Abre PowerShell dentro de la carpeta que contiene modal_app.py,
+   requirements.txt, optimizer, server y dist.
+3. Ejecuta cada comando por separado. Si uno falla, detente y copia su error.
+   Se necesita Python 3.12 instalado en Windows.
+
+   py -3.12 -m venv .venv
+   .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+   .\.venv\Scripts\python.exe -m modal setup
+
+4. En la autenticación de Modal elige el workspace uni100h, el mismo que
+   utiliza Render. Después ejecuta:
+
+   .\.venv\Scripts\python.exe -m modal deploy --env main modal_app.py
+
+5. Espera a que aparezca App deployed! La aplicación conserva su nombre
+   interno metaquant-forge y la función compare_job.
+6. Recarga metaquantproblems.com, selecciona un ejemplo pequeño y pulsa RUN
+   una vez. La primera ejecución puede necesitar arrancar el contenedor.
+7. Si vuelve a fallar, copia las últimas líneas del despliegue y los logs
+   de Render correspondientes a esta nueva ejecución. No compartas claves.
+
+El entorno .venv se crea en tu ordenador; no se incluye en el ZIP.
+No es necesario activar .venv ni cambiar la política de PowerShell.
+Subir archivos a GitHub actualiza Render según su configuración, pero
+el worker de Modal requiere ejecutar el comando deploy anterior.
+No hace falta crear otro servicio Render ni cambiar el dominio.
+
+Para GitHub, sube los archivos del proyecto, no el ZIP ni .venv.
+Conserva los secretos actuales en Render. MODAL_ENVIRONMENT debe ser main
+(o puede omitirse: el código ya utiliza main por defecto).
+El acceso a Fireworks es https://app.fireworks.ai/.
+
+El worker conserva el contenedor hasta 300 segundos después de la actividad,
+con mínimo cero y máximo uno. Los recursos calientes pueden facturarse.
+El arranque se repite si Modal tiene que crear un contenedor nuevo.
+Los resultados se muestran en el orden real de llegada; no se garantiza
+que la GPU termine antes que la CPU en todos los problemas.
