@@ -1,5 +1,5 @@
 """Small Render gateway; GPU and CPU solver bundles run privately on Modal."""
-import hashlib,hmac,json,logging,os,secrets,threading,time
+import hashlib,hmac,json,logging,os,secrets,threading,time,traceback
 from collections import deque
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -33,6 +33,17 @@ class RunRequest(BaseModel):
 def gpu_configured():
     return bool(os.getenv('MODAL_TOKEN_ID') and os.getenv('MODAL_TOKEN_SECRET'))
 
+def modal_environment():
+    return os.getenv('MODAL_ENVIRONMENT','').strip() or 'main'
+
+def log_job_failure(key,phase,exc):
+    # Keep useful tracebacks in Render logs, never credentials or public API responses.
+    detail=''.join(traceback.format_exception(exc))
+    for name in ('MODAL_TOKEN_ID','MODAL_TOKEN_SECRET','META_API_KEY','SESSION_SECRET'):
+        value=os.getenv(name)
+        if value:detail=detail.replace(value,'[REDACTED]')
+    log.error('Job %s failed during %s (environment=%s):\n%s',key,phase,modal_environment(),detail)
+
 def sign(value):return hmac.new(SESSION_KEY.encode(),value.encode(),hashlib.sha256).hexdigest()
 def owner(request):return request.state.owner
 
@@ -65,13 +76,21 @@ def valid_result(r):
 
 def run_job(key):
     global ACTIVE
-    call=None;updates=None
+    call=None;updates=None;phase='load_sdk';progress_available=True
     try:
         import modal
         job=JOBS[key]
-        fn=modal.Function.from_name('metaquant-forge','compare_job')
-        updates=modal.Dict.from_name('metaquant-forge-progress')
+        environment=modal_environment()
+        phase='lookup_function'
+        fn=modal.Function.from_name('metaquant-forge','compare_job',environment_name=environment)
+        fn.hydrate()
+        phase='initialize_progress'
+        # from_name is lazy. Create the shared Dict before the cold worker starts;
+        # otherwise the first progress read can raise NotFoundError and cancel it.
+        updates=modal.Dict.from_name('metaquant-forge-progress',environment_name=environment,create_if_missing=True)
+        updates.hydrate()
         seed=1000+(job['spec']['seed']%100000)*100
+        phase='start_function'
         call=fn.spawn(key,job['spec'],seed)
         with LOCK:job['_call']=call
         start=time.monotonic()
@@ -82,25 +101,39 @@ def run_job(key):
                 with LOCK:job.update(status='cancelled' if cancel else 'failed',stage='cancelled' if cancel else 'job_timeout',error='cancelled' if cancel else 'job_timeout')
                 break
             try:
+                phase='read_result'
                 result=call.get(timeout=0)
                 if not valid_result(result):raise RuntimeError('gpu_verification_failed')
                 with LOCK:job.update(status='completed',stage='completed',result=result)
                 break
+            except modal.exception.FunctionTimeoutError:
+                with LOCK:job.update(status='failed',stage='job_timeout',error='job_timeout')
+                break
             except (TimeoutError,modal.exception.TimeoutError):pass
-            packet=updates.get(key,None)
+            packet=None
+            if progress_available:
+                try:packet=updates.get(key,None)
+                except Exception as exc:
+                    # Progress is advisory: the FunctionCall is the source of truth.
+                    log_job_failure(key,'read_progress (continuing computation)',exc)
+                    progress_available=False
             if packet:
                 with LOCK:
                     job['stage']=packet.get('stage','running')
                     if packet.get('partial'):job['partial']=packet['partial']
             time.sleep(1)
     except Exception as exc:
-        log.error('Job %s failed (%s)',key,type(exc).__name__)
+        log_job_failure(key,phase,exc)
+        code='compute_failed'
+        if type(exc).__name__=='NotFoundError':
+            code='modal_app_not_found' if phase in {'lookup_function','start_function'} else 'modal_resource_not_found'
+        elif type(exc).__name__ in {'AuthError','PermissionDeniedError'}:code='modal_access_denied'
         if call:
             try:call.cancel(terminate_containers=True)
             except Exception:pass
-        with LOCK:JOBS[key].update(status='failed',stage='compute_failed',error='compute_failed')
+        with LOCK:JOBS[key].update(status='failed',stage=code,error=code)
     finally:
-        if updates:
+        if updates is not None and call is not None:
             try:updates.pop(key,None)
             except Exception:pass
         with LOCK:
