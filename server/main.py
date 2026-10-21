@@ -100,16 +100,6 @@ def run_job(key):
                 call.cancel(terminate_containers=True)
                 with LOCK:job.update(status='cancelled' if cancel else 'failed',stage='cancelled' if cancel else 'job_timeout',error='cancelled' if cancel else 'job_timeout')
                 break
-            try:
-                phase='read_result'
-                result=call.get(timeout=0)
-                if not valid_result(result):raise RuntimeError('gpu_verification_failed')
-                with LOCK:job.update(status='completed',stage='completed',result=result)
-                break
-            except modal.exception.FunctionTimeoutError:
-                with LOCK:job.update(status='failed',stage='job_timeout',error='job_timeout')
-                break
-            except (TimeoutError,modal.exception.TimeoutError):pass
             packet=None
             if progress_available:
                 try:packet=updates.get(key,None)
@@ -121,6 +111,16 @@ def run_job(key):
                 with LOCK:
                     job['stage']=packet.get('stage','running')
                     if packet.get('partial'):job['partial']=packet['partial']
+            try:
+                phase='read_result'
+                result=call.get(timeout=0)
+                if not valid_result(result):raise RuntimeError('gpu_verification_failed')
+                with LOCK:job.update(status='completed',stage='completed',result=result)
+                break
+            except modal.exception.FunctionTimeoutError:
+                with LOCK:job.update(status='failed',stage='job_timeout',error='job_timeout')
+                break
+            except (TimeoutError,modal.exception.TimeoutError):pass
             time.sleep(1)
     except Exception as exc:
         log_job_failure(key,phase,exc)
@@ -128,6 +128,7 @@ def run_job(key):
         if type(exc).__name__=='NotFoundError':
             code='modal_app_not_found' if phase in {'lookup_function','start_function'} else 'modal_resource_not_found'
         elif type(exc).__name__ in {'AuthError','PermissionDeniedError'}:code='modal_access_denied'
+        elif type(exc).__name__=='DeserializationError':code='result_transfer_failed'
         if call:
             try:call.cancel(terminate_containers=True)
             except Exception:pass
