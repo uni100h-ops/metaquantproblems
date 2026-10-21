@@ -12,25 +12,30 @@ image=(modal.Image.debian_slim(python_version='3.12')
        .env({'OMP_NUM_THREADS':'1','OPENBLAS_NUM_THREADS':'1','MKL_NUM_THREADS':'1'})
        .add_local_dir(ROOT/'optimizer',remote_path='/root/optimizer'))
 updates=modal.Dict.from_name('metaquant-forge-progress',create_if_missing=True)
+_worker_ready=False
 
 @app.function(image=image,gpu='L4',cpu=4,memory=16384,timeout=600,
-              scaledown_window=20,min_containers=0,max_containers=1,retries=0)
+              scaledown_window=300,min_containers=0,max_containers=1,retries=0)
 def compare_job(job_id:str,spec_data:dict,seed:int):
-    import sys,time
+    global _worker_ready
+    import sys
     sys.path.insert(0,'/root')
+    from optimizer.wire import ProgressPublisher
+    if len(job_id)!=32 or any(c not in '0123456789abcdef' for c in job_id):raise ValueError('Invalid job identity')
+    publisher=ProgressPublisher(lambda packet:updates.put(job_id,packet))
+    publisher.stage('initializing' if not _worker_ready else 'preparing_problem')
     from optimizer.specs import Spec
     from optimizer.problems import build_problem
     from optimizer.engines import verify_gpu,compare
     from optimizer.live import prepare
-    if len(job_id)!=32 or any(c not in '0123456789abcdef' for c in job_id):raise ValueError('Invalid job identity')
-    def stage(name):updates[job_id]={'stage':name}
-    stage('warming_up')
-    hw=verify_gpu()
-    prepare()
+    if not _worker_ready:
+        publisher.stage('warming_up')
+        verify_gpu()
+        prepare()
+        _worker_ready=True
+    publisher.stage('preparing_problem')
     p=build_problem(Spec.model_validate(spec_data))
-    stage('running')
-    def partial(result):updates[job_id]={'stage':'running','partial':result}
-    result=compare(p,seed=seed,progress=stage,partial=partial)
+    publisher.stage('running')
+    result=compare(p,seed=seed,progress=publisher.stage,partial=publisher.partial)
     result['provider']='Modal'
-    updates[job_id]={'stage':'completed','partial':result}
-    return result
+    return publisher.complete(result)
