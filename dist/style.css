@@ -45,3 +45,7 @@
 #explanationTitle strong{font-weight:800}
 .meta-explanation-symbol{display:block;flex:0 0 32px}
 #explanationDialog [data-close]{flex-shrink:0}
+
+/* Meta branding on the GPU results heading. */
+.engine-head .meta-engine-title{display:flex;align-items:center;gap:8px;color:var(--blue)}
+.meta-engine-symbol{display:block;flex:0 0 27px;width:27px;height:18px}
