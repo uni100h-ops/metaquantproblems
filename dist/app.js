@@ -4,6 +4,7 @@ const store={get(k){try{return localStorage.getItem(k)}catch{return null}},set(k
 let lang=store.get('mq-language')||'en';if(!D[lang])lang='en';
 let problemInput='';
 let info=null,category='channels',preset=null,result=null,active=null,lastJob=null,working=false,started=0,timer=null;
+let eventStream=null,streamWatchdog=null,firstSeen={};
 let statusCode='ready',clockOrigin=null,clockOffset=0,elapsedMs=null,clockTimer=null;
 const t=k=>D[lang][k]||D.en[k]||k,loc=o=>o?.[lang]||o?.en||'',esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=(x,d=2)=>Number(x).toLocaleString({en:'en-GB',es:'es-ES',fr:'fr-FR',de:'de-DE'}[lang],{maximumFractionDigits:d}),ms=x=>x<1000?num(x,1)+' ms':num(x/1000,2)+' s';
@@ -58,12 +59,43 @@ $('problemSelect').onchange=()=>{
 function translate(){document.documentElement.lang=lang;document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));if(preset&&!active)$('intent').value=presetPrompt(preset);renderCatalog();if(result)renderResult();else if(!active&&!working)resetResult();if(!active&&!working)status('ready');renderConnection();renderStatus()}
 function renderConnection(){if(!info)return;$('connection').textContent=(info.gpu_configured?t('configured'):t('noGPU'))+' · '+(info.meta_configured?t('aiAvailable'):t('aiUnavailable'));if(!info.gpu_configured&&!active)status('missing')}
 function download(name,data,type='application/json'){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([typeof data==='string'?data:JSON.stringify(data,null,2)],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)}
-function renderResult(){if(!result)return;const r=result;$('runSummary').textContent=num(r.problem.variables,0)+' '+t('variables')+' · '+(r.problem.data_source==='synthetic'?t('synthetic'):'User data');for(const name of ['traditional','quantum']){const e=r.engines[name];if(!e)continue;$(name==='traditional'?'cpuState':'gpuState').textContent=t('done');let metrics=Object.entries(e.decoded.metrics).map(([k,v])=>`<div class="metric-detail"><span>${esc(metricLabel(k))}</span><strong>${esc(num(v,3))}</strong></div>`).join('');$(name).innerHTML=`<div class="metrics"><div><span class="value">${esc(ms(e.bundle_wall_ms??e.solver_ms))}</span><span class="label">${esc(t(e.bundle_wall_ms!=null?'elapsedTrials':'time'))}</span></div><div><span class="value">${esc(num(e.energy,3))}</span><span class="label">${esc(t('cost'))}</span></div></div><p class="small muted">${esc(t('sumTrials'))}: ${esc(ms(e.solver_ms))} · ${esc(t('median'))}: ${esc(ms(e.median_ms))}</p><span class="valid ${e.decoded.feasible?'':'invalid'}">${esc(t(e.decoded.feasible?'feasible':'infeasible'))}</span>${metrics}<p class="small">${esc(t(e.at_proven_optimum?'optimum':'unknown'))}</p>`;document.querySelector('[data-download="'+name+'"]').hidden=false}if(r.complete){const cpuWall=r.engines.traditional?.bundle_wall_ms,gpuWall=r.engines.quantum?.bundle_wall_ms;const ratio=Number.isFinite(cpuWall)&&Number.isFinite(gpuWall)?cpuWall/Math.max(gpuWall,1e-9):r.comparison.sb_speed_ratio,fast=ratio>=1?t('gpu'):t('cpu');$('comparison').textContent=fast+' · '+num(ratio>=1?ratio:1/ratio)+'× '+t('faster')+'. '+t('different')}else $('comparison').textContent=t(r.engines.quantum&&r.engines.traditional?'verifying':r.engines.quantum?'waiting_cpu':r.engines.traditional?'waiting_gpu':'running');$('evidence').textContent=JSON.stringify({problem:r.problem,reference:r.reference,protocol:r.protocol,comparison:r.comparison,hardware:r.hardware,solutions:Object.fromEntries(Object.entries(r.engines).map(([name,e])=>[name,e.decoded]))},null,2);$('hardware').textContent=JSON.stringify(r.hardware,null,2);controls()}
+function renderResult(){if(!result)return;const r=result;$('runSummary').textContent=num(r.problem.variables,0)+' '+t('variables')+' · '+(r.problem.data_source==='synthetic'?t('synthetic'):'User data');for(const name of ['traditional','quantum']){const e=r.engines[name];if(!e)continue;$(name==='traditional'?'cpuState':'gpuState').textContent=t('done');let metrics=Object.entries(e.decoded.metrics).map(([k,v])=>`<div class="metric-detail"><span>${esc(metricLabel(k))}</span><strong>${esc(num(v,3))}</strong></div>`).join('');$(name).innerHTML=`<div class="metrics"><div><span class="value">${esc(ms(e.bundle_wall_ms??e.solver_ms))}</span><span class="label">${esc(t(e.bundle_wall_ms!=null?'elapsedTrials':'time'))}</span></div><div><span class="value">${esc(num(e.energy,3))}</span><span class="label">${esc(t('cost'))}</span></div></div><p class="small muted">${esc(t('sumTrials'))}: ${esc(ms(e.solver_ms))} · ${esc(t('median'))}: ${esc(ms(e.median_ms))}</p><span class="valid ${e.decoded.feasible?'':'invalid'}">${esc(t(e.decoded.feasible?'feasible':'infeasible'))}</span>${metrics}<p class="small">${esc(t(e.at_proven_optimum?'optimum':'unknown'))}</p>`;document.querySelector('[data-download="'+name+'"]').hidden=false}if(r.complete){const cpuWall=r.engines.traditional?.bundle_wall_ms,gpuWall=r.engines.quantum?.bundle_wall_ms;const ratio=Number.isFinite(cpuWall)&&Number.isFinite(gpuWall)?cpuWall/Math.max(gpuWall,1e-9):r.comparison.sb_speed_ratio,fast=ratio>=1?t('gpu'):t('cpu');$('comparison').textContent=fast+' · '+num(ratio>=1?ratio:1/ratio)+'× '+t('faster')+'. '+t('different')}else $('comparison').textContent=t(r.engines.quantum&&r.engines.traditional?'verifying':r.engines.quantum?'waiting_cpu':r.engines.traditional?'waiting_gpu':'running');$('evidence').textContent=JSON.stringify({problem:r.problem,reference:r.reference,protocol:r.protocol,comparison:r.comparison,hardware:r.hardware,delivery:r.delivery,solutions:Object.fromEntries(Object.entries(r.engines).map(([name,e])=>[name,e.decoded]))},null,2);$('hardware').textContent=JSON.stringify(r.hardware,null,2);controls()}
 function metricLabel(k){const labels={remaining_interference:['Audience conflict cost','Coste de conflicto de público'],avoided_interference:['Avoided conflicts','Conflictos evitados'],channel_1_count:['Session A events','Eventos sesión A'],channel_2_count:['Session B events','Eventos sesión B'],load_a:['Zone A load','Carga zona A'],load_b:['Zone B load','Carga zona B'],load_difference:['Load difference','Diferencia de carga'],contention_cost:['Resource contention','Competencia por recursos'],balance_cost:['Balance cost','Coste de equilibrio'],benefit:['Restoration value','Valor de restauración'],pair_cost:['Interaction cost','Coste de interacción'],net_value:['Net value','Valor neto'],selected_count:['Selected actions','Actuaciones seleccionadas'],execution_cost:['Handling cost','Coste de manipulación'],interaction_cost:['Pairwise transport cost','Coste entre parejas'],pool_a_count:['Hub A shipments','Pedidos centro A'],pool_b_count:['Hub B shipments','Pedidos centro B']};return labels[k]?.[lang==='es'?1:0]||k.replaceAll('_',' ')}
-function pendingStage(stage){for(const name of ['traditional','quantum']){if(result?.engines?.[name])continue;const code=['connecting','initializing','warming_up','preparing_problem'].includes(stage)?stage:'running';$(name).innerHTML='<div class="empty">'+esc(t(code))+'</div>';$(name==='traditional'?'cpuState':'gpuState').textContent=''}}
-function pending(){result=null;lastJob=null;for(const n of ['traditional','quantum']){$(n).innerHTML='<div class="empty">'+esc(t('connecting'))+'</div>';document.querySelector('[data-download="'+n+'"]').hidden=true}$('cpuState').textContent='';$('gpuState').textContent='';$('comparison').textContent='';$('explanation').textContent=t('explanationHint');$('evidence').textContent='';$('export').disabled=true;$('csv').disabled=true}
-function finish(){clearTimeout(timer);timer=null;lastJob=active;active=null;store.del('mq-active');stopClock();controls()}
-async function poll(){if(!active)return;const id=active;try{const job=await api('/api/jobs/'+id);if(active!==id)return;if(job.partial){result=job.partial;renderResult()}if(job.status==='completed'){result=job.result;renderResult();finish();status('completed')}else if(['failed','cancelled'].includes(job.status)){finish();status(job.status==='failed'?'failed':job.stage);stopPending(job.status==='failed'?'failed':'cancelled');if(job.status==='failed')error(job.error||'compute_failed')}else{status(job.stage);pendingStage(job.stage);timer=setTimeout(poll,1000)}}catch(e){if(active!==id)return;if(e.http===404){finish();stopPending('job_expired');status('job_expired');error(e.message)}else{status('error');timer=setTimeout(poll,4000)}}}
+function pendingStage(stage){for(const name of ['traditional','quantum']){if(result?.engines?.[name])continue;const code=['connecting','waiting_worker','initializing','warming_up','preparing_problem','receiving_result','cancelling'].includes(stage)?stage:'running';$(name).innerHTML='<div class="empty">'+esc(t(code))+'</div>';$(name==='traditional'?'cpuState':'gpuState').textContent=''}}
+function pending(){firstSeen={};result=null;lastJob=null;for(const n of ['traditional','quantum']){$(n).innerHTML='<div class="empty">'+esc(t('connecting'))+'</div>';document.querySelector('[data-download="'+n+'"]').hidden=true}$('cpuState').textContent='';$('gpuState').textContent='';$('comparison').textContent='';$('explanation').textContent=t('explanationHint');$('evidence').textContent='';$('export').disabled=true;$('csv').disabled=true}
+function finish(){closeStream();clearTimeout(timer);timer=null;lastJob=active;active=null;store.del('mq-active');stopClock();controls()}
+function closeStream(){if(eventStream){eventStream.close();eventStream=null}clearTimeout(streamWatchdog);streamWatchdog=null}
+function applyJob(job){
+ if(!job||!job.status)return;
+ const incoming=job.status==='completed'?job.result:job.partial;
+ if(incoming){
+  const now=clockOrigin===null?(elapsedMs||0):clockOffset+performance.now()-clockOrigin;
+  for(const name of Object.keys(incoming.engines||{}))if(firstSeen[name]===undefined)firstSeen[name]=Math.round(now);
+  result={...incoming,delivery:{gateway_timeline:job.gateway_timeline||[],worker_timeline:job.worker_timeline||[],gateway_elapsed_ms:job.gateway_elapsed_ms,first_visible_ms:{...firstSeen},transport:eventStream?'server_sent_events':'polling'}};
+  renderResult();
+ }
+ if(job.status==='completed'){finish();status('completed')}
+ else if(['failed','cancelled'].includes(job.status)){finish();status(job.status==='failed'?'failed':job.stage);stopPending(job.status==='failed'?'failed':'cancelled');if(job.status==='failed')error(job.error||'compute_failed')}
+ else{const stage=job.stage==='running'&&result?.engines?.quantum&&!result?.engines?.traditional?'waiting_cpu':job.stage==='running'&&result?.engines?.traditional&&!result?.engines?.quantum?'waiting_gpu':job.stage;status(stage);pendingStage(stage)}
+}
+async function poll(){if(!active)return;const id=active;try{const job=await api('/api/jobs/'+id);if(active!==id)return;applyJob(job);if(active)timer=setTimeout(poll,1000)}catch(e){if(active!==id)return;if(e.http===404){finish();stopPending('job_expired');status('job_expired');error(e.message)}else{status('error');timer=setTimeout(poll,4000)}}}
+function watchJob(){
+ closeStream();clearTimeout(timer);timer=null;
+ if(!active)return;
+ if(!info?.streaming||typeof EventSource!=='function'){poll();return}
+ const id=active;
+ const fallback=()=>{if(active!==id)return;closeStream();poll()};
+ const arm=()=>{clearTimeout(streamWatchdog);streamWatchdog=setTimeout(fallback,45000)};
+ try{
+  const source=new EventSource('/api/jobs/'+id+'/events');eventStream=source;
+  streamWatchdog=setTimeout(fallback,8000);
+  source.onopen=()=>{if(eventStream===source)arm()};
+  source.addEventListener('heartbeat',()=>{if(eventStream===source)arm()});
+  source.onmessage=event=>{if(active!==id||eventStream!==source)return;arm();try{applyJob(JSON.parse(event.data))}catch{fallback()}};
+  source.onerror=()=>{if(eventStream===source)fallback()};
+ }catch{fallback()}
+}
+
 $('intent').addEventListener('input',()=>{preset=null;category='own';problemInput='';resetResult();clearError();planMessage();renderCatalog();status('ready')});
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 $('showEvidence').onclick=()=>$('evidenceDialog').showModal();
@@ -88,10 +120,10 @@ $('run').onclick=async()=>{
   problemInput=JSON.stringify(checked.spec,null,2);
   const id=requestId();pending();active=id.replaceAll('-','');
   store.set('mq-active',JSON.stringify({id:active,started}));controls();status('connecting');
-  await api('/api/jobs',{request_id:id,spec:checked.spec,language:lang});poll();
+  const submitted=await api('/api/jobs',{request_id:id,spec:checked.spec,language:lang});applyJob(submitted);if(active)watchJob();
  }catch(e){
   if(e.http){if(active){finish();stopPending('failed')}error(e.message,e.issues);status('failed')}
-  else if(active){poll()}
+  else if(active){watchJob()}
   else{error(e.message,e.issues);status('failed')}
  }finally{working=false;if(!active)stopClock();controls();renderStatus()}
 };
@@ -102,6 +134,6 @@ $('csv').onclick=()=>{if(!result?.engines.traditional||!result?.engines.quantum)
 document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>{const name=b.dataset.download;if(result?.engines[name])download('metaquantproblems-'+name+'.json',{problem:result.problem,hardware:result.hardware,engine:result.engines[name],complete:result.complete})});
 document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;store.set('mq-language',lang);translate()});
 $('technical').onclick=()=>$('technicalDialog').showModal();$('closeDialog').onclick=()=>$('technicalDialog').close();
-async function init(){try{info=await api('/api/info');choose(info.presets[0]);translate();let saved;try{saved=JSON.parse(store.get('mq-active'))}catch{}if(saved&&/^[a-f0-9]{32}$/.test(saved.id)){active=saved.id;startClock(saved.started);pending();controls();status('connecting');poll()}}catch(e){error(e.message);status('error')}}
+async function init(){try{info=await api('/api/info');choose(info.presets[0]);translate();let saved;try{saved=JSON.parse(store.get('mq-active'))}catch{}if(saved&&/^[a-f0-9]{32}$/.test(saved.id)){active=saved.id;startClock(saved.started);pending();controls();status('connecting');watchJob()}}catch(e){error(e.message);status('error')}}
 translate();controls();init();
 })();
