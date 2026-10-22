@@ -2,7 +2,8 @@
 
 **Turn a problem description into a structured optimization model, compare CPU and GPU solutions, and understand the measured results with Meta Muse Spark Open.**
 
-Project domain: **metaquantproblems.com**.
+Project domain: [**metaquantproblems.com**.](https://metaquantproblems.com/)
+
 
 MetaQuant Problems is an independent experimental application for binary optimization. It combines Meta Muse Spark Open, served through Fireworks, with a classical CPU baseline and an on-demand NVIDIA GPU solver running on Modal.
 
