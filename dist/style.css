@@ -6,7 +6,7 @@
 @media(max-width:540px){.engines{grid-template-columns:1fr}.engine-body{min-height:160px}header #technical{font-size:10px;padding:4px 6px}.brand{font-size:17px}.brand img{width:28px}.intro h2{font-size:19px}.result-actions{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){#status.busy::before{animation:none}}
 
-/* Blue is reserved for the branding and the two page titles. */
+/* Blue branding, page titles, and the Meta AI action. */
 .brand,header h1,.intro h2{color:var(--blue)}
 .intro{min-height:36px;justify-content:center}
 .problem-picker{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-bottom:5px}
@@ -18,3 +18,17 @@
 .example-details p{margin-top:7px;font-size:12px;line-height:1.45}
 @media(min-width:900px) and (max-height:700px){.intro{min-height:30px}.problem-picker{margin-bottom:1px}.problem-picker select{min-height:32px}.example-details{max-height:145px;padding:7px 8px}.example-details p{font-size:11px}}
 @media(max-width:540px){.problem-picker{gap:8px}.example-details{max-height:none}}
+
+/* Prominent Meta AI explanation action. */
+#explain{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:240px;max-width:100%;padding:11px 20px;border:2px solid var(--blue);border-radius:8px;background:var(--blue);color:#fff;font-size:15px;line-height:1.2;font-weight:800;letter-spacing:.25px;text-transform:uppercase;text-align:center}
+#explain:hover:not(:disabled){background:#0654d6;border-color:#0654d6;color:#fff}
+#explain:disabled{background:var(--blue);border-color:var(--blue);color:#fff;opacity:.65;cursor:not-allowed}
+@media(max-width:540px){#explain{width:100%;min-width:0;margin-left:0}}
+
+/* Readable model attribution immediately below its action. */
+.explain-action{display:flex;flex-direction:column;align-items:stretch;gap:5px;flex:0 1 330px;min-width:0;max-width:100%;margin-left:auto}
+.explain-action #explain{width:100%;min-width:0;margin-left:0}
+.meta-model-note{margin:0;color:#000;font-size:12px;line-height:1.4;font-weight:400;text-align:left}
+.meta-model-note strong{font-weight:700}
+.result-actions #showEvidence{align-self:flex-start}
+@media(max-width:540px){.explain-action{flex-basis:100%;width:100%;margin-left:0}}

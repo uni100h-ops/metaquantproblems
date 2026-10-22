@@ -110,7 +110,9 @@ window.MQ_I18N={
     "meta_provider_unavailable": "The model provider is temporarily unavailable. Try again shortly.",
     "meta_connection": "Could not connect to the model provider. Your calculated results are still available.",
     "meta_format": "The model returned no usable answer. Try again; if this repeats, check the model response and output-token limit.",
-    "meta_output_limit": "The model reached its output-token limit before completing the answer. Your calculated results are still available. Try the explanation again."
+    "meta_output_limit": "The model reached its output-token limit before completing the answer. Your calculated results are still available. Try the explanation again.",
+    "metaModelIntro": "The model currently configured is ",
+    "metaModelAccess": ", accessed through the Fireworks API."
   },
   "es": {
     "technical": "Datos técnicos",
@@ -223,7 +225,9 @@ window.MQ_I18N={
     "meta_provider_unavailable": "El proveedor no está disponible temporalmente. Inténtalo de nuevo en un momento.",
     "meta_connection": "No se ha podido conectar con el proveedor. Tus resultados calculados siguen disponibles.",
     "meta_format": "El modelo no ha devuelto una respuesta utilizable. Reinténtalo; si se repite, revisa la respuesta y el límite de tokens de salida.",
-    "meta_output_limit": "El modelo ha agotado el límite de tokens de salida antes de terminar la respuesta. Tus resultados calculados siguen disponibles. Vuelve a solicitar la explicación."
+    "meta_output_limit": "El modelo ha agotado el límite de tokens de salida antes de terminar la respuesta. Tus resultados calculados siguen disponibles. Vuelve a solicitar la explicación.",
+    "metaModelIntro": "El modelo configurado actualmente es ",
+    "metaModelAccess": ", al que accedemos mediante la API de Fireworks."
   },
   "fr": {
     "technical": "Données techniques",
@@ -304,7 +308,9 @@ window.MQ_I18N={
     "meta_provider_unavailable": "Le fournisseur est temporairement indisponible. Réessayez dans un instant.",
     "meta_connection": "Impossible de joindre le fournisseur. Vos résultats calculés restent disponibles.",
     "meta_format": "Le modèle n’a renvoyé aucune réponse utilisable. Réessayez ; si cela persiste, vérifiez la réponse et la limite de jetons de sortie.",
-    "meta_output_limit": "Le modèle a atteint sa limite de jetons de sortie avant de terminer la réponse. Vos résultats calculés restent disponibles. Réessayez l’explication."
+    "meta_output_limit": "Le modèle a atteint sa limite de jetons de sortie avant de terminer la réponse. Vos résultats calculés restent disponibles. Réessayez l’explication.",
+    "metaModelIntro": "Le modèle actuellement configuré est ",
+    "metaModelAccess": ", accessible via l’API de Fireworks."
   },
   "de": {
     "technical": "Technische Daten",
@@ -385,6 +391,8 @@ window.MQ_I18N={
     "meta_provider_unavailable": "Der Anbieter ist vorübergehend nicht verfügbar. Versuche es gleich erneut.",
     "meta_connection": "Keine Verbindung zum Anbieter möglich. Deine berechneten Ergebnisse bleiben verfügbar.",
     "meta_format": "Das Modell hat keine nutzbare Antwort geliefert. Versuche es erneut; prüfe bei Wiederholung die Antwort und das Ausgabetoken-Limit.",
-    "meta_output_limit": "Das Modell hat das Ausgabetoken-Limit erreicht, bevor die Antwort fertig war. Deine berechneten Ergebnisse bleiben verfügbar. Versuche die Erklärung erneut."
+    "meta_output_limit": "Das Modell hat das Ausgabetoken-Limit erreicht, bevor die Antwort fertig war. Deine berechneten Ergebnisse bleiben verfügbar. Versuche die Erklärung erneut.",
+    "metaModelIntro": "Das aktuell konfigurierte Modell ist ",
+    "metaModelAccess": ", auf das wir über die Fireworks-API zugreifen."
   }
 };
