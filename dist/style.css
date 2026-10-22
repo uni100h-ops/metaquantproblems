@@ -47,5 +47,18 @@
 #explanationDialog [data-close]{flex-shrink:0}
 
 /* Meta branding on the GPU results heading. */
-.engine-head .meta-engine-title{display:flex;align-items:center;gap:8px;color:var(--blue)}
+.engine-head .meta-engine-title{display:flex;align-items:center;gap:28px;color:var(--blue)}
 .meta-engine-symbol{display:block;flex:0 0 27px;width:27px;height:18px}
+
+/* Provider symbols stay with the service they identify. */
+.engine-head .engine-providers{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px}
+.provider-brand{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.provider-icon{display:inline-block;width:18px;height:18px;flex:0 0 18px;vertical-align:middle}
+.nvidia-brand .provider-icon{color:#76b900}
+.fireworks-note-icon{margin-left:3px}
+.footer-providers{display:inline-flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.footer-providers a{text-decoration:none}
+.footer-providers a:hover{text-decoration:underline}
+.footer-providers .provider-icon{width:14px;height:14px;flex-basis:14px}
+footer{align-items:center}
+@media(max-width:700px){footer{flex-wrap:wrap}.footer-providers{justify-content:flex-start}}
