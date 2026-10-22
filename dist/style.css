@@ -62,3 +62,11 @@
 .footer-providers .provider-icon{width:14px;height:14px;flex-basis:14px}
 footer{align-items:center}
 @media(max-width:700px){footer{flex-wrap:wrap}.footer-providers{justify-content:flex-start}}
+
+/* Three provider logos beside the main comparison title. */
+.intro h2{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 28px}
+.intro-logos{display:inline-flex;align-items:center;gap:14px;flex:0 0 auto}
+.intro-logo{display:block;width:36px;height:26px;flex:0 0 36px}
+.intro-logo-meta{color:var(--blue)}
+.intro-logo-nvidia{color:#76b900}
+.intro-logo-modal{color:#000}
