@@ -85,7 +85,19 @@ window.MQ_I18N={
     "waiting_cpu": "GPU result ready · CPU is still computing.",
     "waiting_gpu": "CPU result ready · GPU is still computing.",
     "result_transfer_failed": "The server could not read the result. Update the Modal worker and try again.",
-    "incomplete": "Calculation ended. Available results are shown."
+    "incomplete": "Calculation ended. Available results are shown.",
+    "category_channels": "Radio Channels",
+    "example_channels": "A two-channel allocation problem illustrated by festival sessions. Assign each of 2,048 events to session A or B. Shared-audience weights penalize placing competing events in the same session. The solution gives every event a session and reports the remaining conflict cost; lower is better.",
+    "category_partition": "Balance Tasks",
+    "example_partition": "Assign 2,048 charging requests to zone A or B. The objective combines the difference in energy demand between zones with the cost of placing requests that compete for shared resources together. Every request is assigned. Perfectly equal loads are not required: imbalance is a cost to minimize.",
+    "category_projects": "Select Projects",
+    "example_projects": "Choose which of 2,048 habitat-restoration actions to carry out. Each action has a benefit, while pairs can overlap or help each other. The solver minimizes interaction costs minus selected benefits. The result lists the selected actions and their net value; it does not impose a budget.",
+    "category_assignment": "Assign Jobs",
+    "example_assignment": "Assign each of 2,048 shipments to one of two logistics hubs. Individual handling costs and interactions between pairs of shipments contribute to the objective. The result gives one hub per shipment and the total cost, without introducing capacity or deadline rules.",
+    "category_custom": "Advanced QUBO",
+    "example_custom": "Choose a binary mode, 0 or 1, for each of 2,048 synthetic sensors. The QUBO matrix combines local preferences with positive and negative pair interactions. Both solvers minimize the same quadratic objective. The result is a binary assignment and its measured cost, not a physical sensor simulation.",
+    "problemDetails": "What does this example solve?",
+    "ownExplanation": "Describe the decisions, numerical data, objective and constraints of your problem. Meta AI proposes a supported binary formulation and requests any missing information. RUN validates it before sending the same problem to both solvers. Request synthetic data explicitly if you want a generated example."
   },
   "es": {
     "technical": "Datos técnicos",
@@ -173,7 +185,19 @@ window.MQ_I18N={
     "waiting_cpu": "Resultado GPU disponible · La CPU sigue calculando.",
     "waiting_gpu": "Resultado CPU disponible · La GPU sigue calculando.",
     "result_transfer_failed": "El servidor no ha podido leer el resultado. Actualiza el worker de Modal y vuelve a intentarlo.",
-    "incomplete": "El cálculo ha terminado. Se muestran los resultados disponibles."
+    "incomplete": "El cálculo ha terminado. Se muestran los resultados disponibles.",
+    "category_channels": "Canales de radio",
+    "example_channels": "Un problema de asignación de dos canales ilustrado con sesiones de un festival. Asigna cada uno de los 2.048 eventos a la sesión A o B. Los pesos de público compartido penalizan que eventos competidores coincidan en la misma sesión. El resultado asigna una sesión a cada evento e indica el coste de conflicto restante; cuanto menor, mejor.",
+    "category_partition": "Equilibrar tareas",
+    "example_partition": "Asigna 2.048 solicitudes de carga a la zona A o B. El objetivo combina la diferencia de demanda energética entre zonas y el coste de agrupar solicitudes que compiten por recursos. Todas quedan asignadas. No se exige igualdad exacta: el desequilibrio es un coste que se minimiza.",
+    "category_projects": "Seleccionar proyectos",
+    "example_projects": "Elige cuáles de las 2.048 actuaciones de restauración realizar. Cada actuación aporta un beneficio y las parejas pueden solaparse o ayudarse. Se minimizan los costes de interacción menos los beneficios seleccionados. El resultado muestra las actuaciones elegidas y su valor neto; no impone un presupuesto.",
+    "category_assignment": "Asignar trabajos",
+    "example_assignment": "Asigna cada uno de los 2.048 pedidos a uno de dos centros logísticos. El objetivo incluye costes individuales de manipulación e interacciones entre parejas de pedidos. El resultado indica un centro por pedido y el coste total, sin añadir reglas de capacidad o plazos.",
+    "category_custom": "QUBO avanzado",
+    "example_custom": "Elige el modo binario, 0 o 1, de cada uno de los 2.048 sensores sintéticos. La matriz QUBO combina preferencias locales e interacciones positivas y negativas. Ambos métodos minimizan el mismo objetivo cuadrático. Se obtiene una asignación binaria y su coste medido, no una simulación física de sensores.",
+    "problemDetails": "¿Qué resuelve este ejemplo?",
+    "ownExplanation": "Describe las decisiones, los datos numéricos, el objetivo y las restricciones. Meta AI propone una formulación binaria admitida y solicita la información que falte. RUN la valida antes de enviar el mismo problema a ambos métodos. Pide datos sintéticos expresamente si quieres un ejemplo generado."
   },
   "fr": {
     "technical": "Données techniques",
@@ -227,7 +251,19 @@ window.MQ_I18N={
     "waiting_cpu": "Résultat GPU disponible · Le CPU calcule encore.",
     "waiting_gpu": "Résultat CPU disponible · Le GPU calcule encore.",
     "result_transfer_failed": "Le serveur n’a pas pu lire le résultat. Mettez à jour le worker Modal et réessayez.",
-    "incomplete": "Le calcul est terminé. Les résultats disponibles sont affichés."
+    "incomplete": "Le calcul est terminé. Les résultats disponibles sont affichés.",
+    "category_channels": "Canaux radio",
+    "example_channels": "Un problème à deux canaux illustré par des sessions de festival. Affectez chacun des 2 048 événements à la session A ou B. Les poids de public partagé pénalisent les événements concurrents dans une même session. Le résultat donne une session à chaque événement et le coût des conflits restants ; plus il est faible, mieux c’est.",
+    "category_partition": "Équilibrer les tâches",
+    "example_partition": "Affectez 2 048 demandes de recharge à la zone A ou B. L’objectif combine l’écart de demande énergétique et le coût de regrouper des demandes en concurrence pour les mêmes ressources. Toutes sont affectées. L’égalité parfaite n’est pas obligatoire : le déséquilibre est un coût à réduire.",
+    "category_projects": "Sélectionner des projets",
+    "example_projects": "Choisissez parmi 2 048 actions de restauration. Chaque action apporte un bénéfice ; certaines paires se recouvrent ou se renforcent. Le solveur minimise les coûts d’interaction moins les bénéfices retenus. Le résultat liste les actions choisies et leur valeur nette, sans imposer de budget.",
+    "category_assignment": "Affecter des tâches",
+    "example_assignment": "Affectez chacun des 2 048 envois à l’un de deux centres logistiques. Les coûts individuels de traitement et les interactions entre envois contribuent à l’objectif. Le résultat donne un centre par envoi et le coût total, sans règles de capacité ni de délai.",
+    "category_custom": "QUBO avancé",
+    "example_custom": "Choisissez le mode binaire, 0 ou 1, de chacun des 2 048 capteurs synthétiques. La matrice QUBO combine des préférences locales et des interactions positives ou négatives. Les deux méthodes minimisent le même objectif quadratique. Le résultat est une affectation binaire avec un coût mesuré, pas une simulation physique.",
+    "problemDetails": "Que résout cet exemple ?",
+    "ownExplanation": "Décrivez les décisions, les données numériques, l’objectif et les contraintes. Meta AI propose une formulation binaire prise en charge et demande les informations manquantes. RUN la valide avant d’envoyer le même problème aux deux méthodes. Demandez explicitement des données synthétiques pour un exemple généré."
   },
   "de": {
     "technical": "Technische Daten",
@@ -281,6 +317,18 @@ window.MQ_I18N={
     "waiting_cpu": "GPU-Ergebnis verfügbar · CPU berechnet noch.",
     "waiting_gpu": "CPU-Ergebnis verfügbar · GPU berechnet noch.",
     "result_transfer_failed": "Der Server konnte das Ergebnis nicht lesen. Aktualisieren Sie den Modal-Worker und versuchen Sie es erneut.",
-    "incomplete": "Berechnung beendet. Verfügbare Ergebnisse werden angezeigt."
+    "incomplete": "Berechnung beendet. Verfügbare Ergebnisse werden angezeigt.",
+    "category_channels": "Funkkanäle",
+    "example_channels": "Ein Problem mit zwei Kanälen, dargestellt anhand von Festival-Sessions. Ordne jede der 2.048 Veranstaltungen Session A oder B zu. Gewichte für gemeinsames Publikum bestrafen konkurrierende Veranstaltungen in derselben Session. Das Ergebnis enthält jede Zuordnung und die verbleibenden Konfliktkosten; niedriger ist besser.",
+    "category_partition": "Aufgaben ausgleichen",
+    "example_partition": "Ordne 2.048 Ladeanfragen Zone A oder B zu. Das Ziel kombiniert den Unterschied im Energiebedarf mit den Kosten gemeinsam belegter Ressourcen. Jede Anfrage wird zugeordnet. Exakt gleiche Lasten sind nicht vorgeschrieben: Ungleichgewicht ist ein zu minimierender Kostenanteil.",
+    "category_projects": "Projekte auswählen",
+    "example_projects": "Wähle aus 2.048 Maßnahmen zur Habitat-Restaurierung. Jede Maßnahme hat einen Nutzen; Paare können sich überschneiden oder gegenseitig verstärken. Minimiert werden Interaktionskosten abzüglich des gewählten Nutzens. Das Ergebnis zeigt die gewählten Maßnahmen und ihren Nettonutzen, ohne Budgetvorgabe.",
+    "category_assignment": "Aufträge zuweisen",
+    "example_assignment": "Ordne jede der 2.048 Sendungen einem von zwei Logistikzentren zu. Individuelle Abwicklungskosten und paarweise Wechselwirkungen gehen in das Ziel ein. Das Ergebnis nennt ein Zentrum pro Sendung und die Gesamtkosten, ohne Kapazitäts- oder Fristvorgaben hinzuzufügen.",
+    "category_custom": "Erweitertes QUBO",
+    "example_custom": "Wähle den binären Modus 0 oder 1 für jeden der 2.048 synthetischen Sensoren. Die QUBO-Matrix verbindet lokale Präferenzen mit positiven und negativen Wechselwirkungen. Beide Verfahren minimieren dasselbe quadratische Ziel. Das Ergebnis ist eine binäre Zuordnung mit gemessenen Kosten, keine physikalische Sensorsimulation.",
+    "problemDetails": "Was löst dieses Beispiel?",
+    "ownExplanation": "Beschreibe Entscheidungen, numerische Daten, Ziel und Einschränkungen. Meta AI schlägt eine unterstützte binäre Formulierung vor und fragt nach fehlenden Informationen. RUN prüft sie, bevor beide Verfahren dasselbe Problem erhalten. Fordere synthetische Daten ausdrücklich an, wenn du ein generiertes Beispiel möchtest."
   }
 };
