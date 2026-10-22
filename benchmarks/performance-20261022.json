@@ -1,0 +1,100 @@
+{
+  "scope": "Local CPU-only measurement; no Modal or GPU timing",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "numpy": "2.5.4",
+  "dwave_samplers": "1.8.0",
+  "allowed_logical_cpus": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "cpu_limit_applied": true,
+  "trials": 3,
+  "workers": 3,
+  "profile": {
+    "name": "CPU_SA_8x200",
+    "method": "sa",
+    "reads": 8,
+    "sweeps": 200,
+    "parallel": false
+  },
+  "timing": "Wall time of three complete CPU trials and independent checks; problem generation and warm-up excluded; no cached solutions",
+  "cases": [
+    {
+      "category": "channels",
+      "spec": {
+        "kind": "channels",
+        "size": 2048,
+        "variant": "standard",
+        "seed": 20261026,
+        "offset": 0.0
+      },
+      "sha256": "c1313b0ad348d7371bb2eee0adeec4e42730e75ac8cace8943a8faf01d64fff2",
+      "solver_seeds": [
+        6103600,
+        6103601,
+        6103602
+      ],
+      "rounds": [
+        {
+          "sequential_s": 12.730059091001749,
+          "parallel_s": 5.247299324997584,
+          "speedup": 2.4260211401238503
+        },
+        {
+          "parallel_s": 5.2653537089936435,
+          "sequential_s": 11.395079287991393,
+          "speedup": 2.1641621660720896
+        }
+      ],
+      "median_sequential_s": 12.062569189496571,
+      "median_parallel_s": 5.256326516995614,
+      "speedup": 2.2948667953738986,
+      "identical_bits_energies_and_seeds": true,
+      "energies": [
+        5664684.0,
+        5663409.0,
+        5663958.0
+      ]
+    },
+    {
+      "category": "custom",
+      "spec": {
+        "kind": "custom",
+        "size": 2048,
+        "variant": "dense",
+        "seed": 20261426,
+        "offset": 0.0
+      },
+      "sha256": "692603f22dc1729604de404e093c82e83f3f2392790025ec5c04ee084316352b",
+      "solver_seeds": [
+        6143600,
+        6143601,
+        6143602
+      ],
+      "rounds": [
+        {
+          "sequential_s": 10.048042188995169,
+          "parallel_s": 4.580689155001892,
+          "speedup": 2.1935656074857626
+        },
+        {
+          "parallel_s": 4.279176734999055,
+          "sequential_s": 10.76483003499743,
+          "speedup": 2.515631090193756
+        }
+      ],
+      "median_sequential_s": 10.4064361119963,
+      "median_parallel_s": 4.429932945000473,
+      "speedup": 2.349118201380628,
+      "identical_bits_energies_and_seeds": true,
+      "energies": [
+        -421774.0,
+        -423764.0,
+        -417536.0
+      ]
+    }
+  ]
+}
