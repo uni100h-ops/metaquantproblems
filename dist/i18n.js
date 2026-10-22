@@ -46,7 +46,6 @@ window.MQ_I18N={
     "waiting": "Waiting for the other engine…",
     "done": "Finished",
     "faster": "faster in solver time",
-    "different": "Compare objectives: the faster result may have a higher cost.",
     "error": "Request failed. Please retry.",
     "compute_failed": "The computation could not finish. Please try again. Error details are available in the server logs.",
     "busy": "Another request is running. Try again shortly.",
@@ -101,7 +100,17 @@ window.MQ_I18N={
     "elapsedTrials": "Time to finish · 3 runs",
     "sumTrials": "Sum of call durations",
     "waiting_worker": "Waiting for the GPU worker to start… calculation has not started.",
-    "receiving_result": "Receiving final results…"
+    "receiving_result": "Receiving final results…",
+    "meta_access": "The model provider denied access. Check the API key permissions and model access.",
+    "meta_rate_limit": "The model provider is limiting requests or usage. Wait briefly and check your usage limits.",
+    "meta_model_unavailable": "The model or endpoint is unavailable. Check META_MODEL and META_API_BASE_URL on Render and confirm serverless access in Fireworks.",
+    "meta_timeout": "The model provider did not respond in time. Your calculated results are still available. Try the explanation again shortly.",
+    "meta_account": "The model provider rejected the account or deployment status. Check your Fireworks account.",
+    "meta_request_rejected": "The model provider rejected the request format or size. Check the selected model and its supported parameters.",
+    "meta_provider_unavailable": "The model provider is temporarily unavailable. Try again shortly.",
+    "meta_connection": "Could not connect to the model provider. Your calculated results are still available.",
+    "meta_format": "The model returned no usable answer. Try again; if this repeats, check the model response and output-token limit.",
+    "meta_output_limit": "The model reached its output-token limit before completing the answer. Your calculated results are still available. Try the explanation again."
   },
   "es": {
     "technical": "Datos técnicos",
@@ -150,7 +159,6 @@ window.MQ_I18N={
     "waiting": "Esperando al otro motor…",
     "done": "Terminado",
     "faster": "más rápido en cálculo",
-    "different": "Compara los objetivos: la solución más rápida puede tener mayor coste.",
     "error": "La solicitud ha fallado. Vuelve a intentarlo.",
     "compute_failed": "El cálculo no ha podido terminar. Vuelve a intentarlo. Los detalles del error están en los registros del servidor.",
     "busy": "Hay otra solicitud en curso. Prueba en unos momentos.",
@@ -205,7 +213,17 @@ window.MQ_I18N={
     "elapsedTrials": "Tiempo para finalizar · 3 ejecuciones",
     "sumTrials": "Suma de duraciones",
     "waiting_worker": "Esperando el arranque del servidor GPU… el cálculo aún no ha empezado.",
-    "receiving_result": "Recibiendo los resultados finales…"
+    "receiving_result": "Recibiendo los resultados finales…",
+    "meta_access": "El proveedor ha denegado el acceso. Revisa los permisos de la API key y el acceso al modelo.",
+    "meta_rate_limit": "El proveedor está limitando las solicitudes o el uso. Espera un momento y revisa tus límites.",
+    "meta_model_unavailable": "El modelo o la dirección de la API no están disponibles. Revisa META_MODEL y META_API_BASE_URL en Render y el acceso serverless en Fireworks.",
+    "meta_timeout": "El proveedor no ha respondido a tiempo. Tus resultados calculados siguen disponibles. Vuelve a solicitar la explicación en un momento.",
+    "meta_account": "El proveedor ha rechazado el estado de la cuenta o del despliegue. Revisa tu cuenta de Fireworks.",
+    "meta_request_rejected": "El proveedor ha rechazado el formato o el tamaño de la petición. Revisa el modelo seleccionado y los parámetros que admite.",
+    "meta_provider_unavailable": "El proveedor no está disponible temporalmente. Inténtalo de nuevo en un momento.",
+    "meta_connection": "No se ha podido conectar con el proveedor. Tus resultados calculados siguen disponibles.",
+    "meta_format": "El modelo no ha devuelto una respuesta utilizable. Reinténtalo; si se repite, revisa la respuesta y el límite de tokens de salida.",
+    "meta_output_limit": "El modelo ha agotado el límite de tokens de salida antes de terminar la respuesta. Tus resultados calculados siguen disponibles. Vuelve a solicitar la explicación."
   },
   "fr": {
     "technical": "Données techniques",
@@ -276,7 +294,17 @@ window.MQ_I18N={
     "sumTrials": "Somme des durées",
     "method": "Les deux moteurs reçoivent le même QUBO dans des processus séparés. Les trois essais CPU sont parallèles ; les trois essais GPU sont séquentiels. Le temps principal et le rapport de vitesse mesurent le temps écoulé pour terminer les trois essais, vérifications et décodage inclus. Somme et médiane des durées individuelles sont affichées séparément. Préchauffage, API Meta et réseau sont exclus ; le temps total de la requête est indiqué à part.",
     "waiting_worker": "En attente du démarrage du serveur GPU… le calcul n’a pas commencé.",
-    "receiving_result": "Réception des résultats finaux…"
+    "receiving_result": "Réception des résultats finaux…",
+    "meta_access": "Le fournisseur a refusé l’accès. Vérifiez les permissions de la clé API et l’accès au modèle.",
+    "meta_rate_limit": "Le fournisseur limite les requêtes ou l’utilisation. Patientez et vérifiez vos limites.",
+    "meta_model_unavailable": "Le modèle ou le point d’accès est indisponible. Vérifiez META_MODEL et META_API_BASE_URL sur Render et l’accès serverless dans Fireworks.",
+    "meta_timeout": "Le fournisseur n’a pas répondu à temps. Vos résultats calculés restent disponibles. Réessayez l’explication dans un instant.",
+    "meta_account": "Le fournisseur a refusé l’état du compte ou du déploiement. Vérifiez votre compte Fireworks.",
+    "meta_request_rejected": "Le fournisseur a refusé le format ou la taille de la requête. Vérifiez le modèle et ses paramètres pris en charge.",
+    "meta_provider_unavailable": "Le fournisseur est temporairement indisponible. Réessayez dans un instant.",
+    "meta_connection": "Impossible de joindre le fournisseur. Vos résultats calculés restent disponibles.",
+    "meta_format": "Le modèle n’a renvoyé aucune réponse utilisable. Réessayez ; si cela persiste, vérifiez la réponse et la limite de jetons de sortie.",
+    "meta_output_limit": "Le modèle a atteint sa limite de jetons de sortie avant de terminer la réponse. Vos résultats calculés restent disponibles. Réessayez l’explication."
   },
   "de": {
     "technical": "Technische Daten",
@@ -347,6 +375,16 @@ window.MQ_I18N={
     "sumTrials": "Summe der Laufzeiten",
     "method": "Beide Verfahren erhalten dasselbe QUBO in getrennten Prozessen. Drei CPU-Läufe arbeiten parallel; drei GPU-Läufe nacheinander. Hauptzeit und Geschwindigkeitsvergleich messen die verstrichene Zeit bis zum Abschluss aller drei Läufe einschließlich Prüfung und Dekodierung. Summe und Median der einzelnen Laufzeiten stehen separat. Aufwärmen, Meta-API und Netzwerk sind ausgeschlossen; die gesamte Anfragezeit wird separat angezeigt.",
     "waiting_worker": "Warten auf den GPU-Worker… Berechnung noch nicht gestartet.",
-    "receiving_result": "Endergebnisse werden empfangen…"
+    "receiving_result": "Endergebnisse werden empfangen…",
+    "meta_access": "Der Anbieter hat den Zugriff verweigert. Prüfe API-Schlüsselrechte und Modellzugriff.",
+    "meta_rate_limit": "Der Anbieter begrenzt Anfragen oder Nutzung. Warte kurz und prüfe deine Nutzungslimits.",
+    "meta_model_unavailable": "Das Modell oder der API-Endpunkt ist nicht verfügbar. Prüfe META_MODEL und META_API_BASE_URL in Render sowie den Serverless-Zugriff in Fireworks.",
+    "meta_timeout": "Der Anbieter hat nicht rechtzeitig geantwortet. Deine berechneten Ergebnisse bleiben verfügbar. Versuche die Erklärung gleich erneut.",
+    "meta_account": "Der Anbieter hat den Konto- oder Bereitstellungsstatus abgelehnt. Prüfe dein Fireworks-Konto.",
+    "meta_request_rejected": "Der Anbieter hat Format oder Größe der Anfrage abgelehnt. Prüfe das Modell und seine unterstützten Parameter.",
+    "meta_provider_unavailable": "Der Anbieter ist vorübergehend nicht verfügbar. Versuche es gleich erneut.",
+    "meta_connection": "Keine Verbindung zum Anbieter möglich. Deine berechneten Ergebnisse bleiben verfügbar.",
+    "meta_format": "Das Modell hat keine nutzbare Antwort geliefert. Versuche es erneut; prüfe bei Wiederholung die Antwort und das Ausgabetoken-Limit.",
+    "meta_output_limit": "Das Modell hat das Ausgabetoken-Limit erreicht, bevor die Antwort fertig war. Deine berechneten Ergebnisse bleiben verfügbar. Versuche die Erklärung erneut."
   }
 };
