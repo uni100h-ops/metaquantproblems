@@ -1,11 +1,11 @@
 """Small Render gateway; GPU and CPU solver bundles run privately on Modal."""
-import hashlib,hmac,json,logging,os,secrets,threading,time,traceback
+import asyncio,hashlib,hmac,json,logging,os,secrets,threading,time,traceback
 from collections import deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import UUID,uuid4
 from fastapi import FastAPI,HTTPException,Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field,ConfigDict
 from typing import Literal
@@ -14,11 +14,42 @@ from optimizer.specs import Spec,resolve_input,InputError
 from . import meta_ai
 
 log=logging.getLogger('metaquant')
+log.setLevel(logging.INFO)
+if not log.hasHandlers():
+    handler=logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+    log.addHandler(handler)
 ROOT=Path(__file__).resolve().parents[1]
 SESSION_KEY=os.getenv('SESSION_SECRET','') or secrets.token_hex(32)
 JOBS={}; LOCK=threading.RLock(); RECENT={}; ACTIVE=None; PLANNING=threading.Lock()
 TERMINAL={'completed','failed','cancelled'}
 MAX_SECONDS=720
+LISTENERS={}
+PROGRESS_INTERVAL=0.25
+
+def _signal(queue):
+    if queue.empty():queue.put_nowait(True)
+
+def update_job(key,**changes):
+    """Publish state changes to browser streams; log phases without user data."""
+    with LOCK:
+        job=JOBS[key]
+        started=job.setdefault('_started',time.monotonic())
+        elapsed=round(1000*(time.monotonic()-started),2)
+        stage=changes.get('stage')
+        if stage and stage!=job.get('stage'):
+            history=job.setdefault('gateway_timeline',[])
+            history.append({'stage':stage,'gateway_ms':elapsed})
+            log.info('Job %s stage=%s gateway_ms=%.2f',key,stage,elapsed)
+        previous=set(job.get('partial',{}).get('engines',{}))
+        incoming=changes.get('partial',{}).get('engines',{})
+        for name in set(incoming)-previous:
+            log.info('Job %s result=%s received_ms=%.2f bundle_wall_ms=%s',
+                     key,name,elapsed,incoming[name].get('bundle_wall_ms'))
+        job.update(changes)
+        job['gateway_elapsed_ms']=elapsed
+        for loop,queue in tuple(LISTENERS.get(key,())):
+            if not loop.is_closed():loop.call_soon_threadsafe(_signal,queue)
 
 class TextRequest(BaseModel):
     model_config=ConfigDict(extra='forbid')
@@ -80,6 +111,7 @@ def run_job(key):
     try:
         import modal
         job=JOBS[key]
+        update_job(key,stage='connecting')
         environment=modal_environment()
         phase='lookup_function'
         fn=modal.Function.from_name('metaquant-forge','compare_job',environment_name=environment)
@@ -93,12 +125,14 @@ def run_job(key):
         phase='start_function'
         call=fn.spawn(key,job['spec'],seed)
         with LOCK:job['_call']=call
+        update_job(key,stage='waiting_worker')
         start=time.monotonic()
+        last_packet=None
         while True:
             with LOCK:cancel=job.get('_cancel',False)
             if cancel or time.monotonic()-start>MAX_SECONDS:
                 call.cancel(terminate_containers=True)
-                with LOCK:job.update(status='cancelled' if cancel else 'failed',stage='cancelled' if cancel else 'job_timeout',error='cancelled' if cancel else 'job_timeout')
+                update_job(key,status='cancelled' if cancel else 'failed',stage='cancelled' if cancel else 'job_timeout',error='cancelled' if cancel else 'job_timeout')
                 break
             packet=None
             if progress_available:
@@ -107,21 +141,25 @@ def run_job(key):
                     # Progress is advisory: the FunctionCall is the source of truth.
                     log_job_failure(key,'read_progress (continuing computation)',exc)
                     progress_available=False
-            if packet:
-                with LOCK:
-                    job['stage']=packet.get('stage','running')
-                    if packet.get('partial'):job['partial']=packet['partial']
+            if packet and packet!=last_packet:
+                last_packet=packet
+                changes={'stage':packet.get('stage','running')}
+                # "Completed" is only shown after validating the final result.
+                if changes['stage']=='completed':changes['stage']='receiving_result'
+                if packet.get('partial'):changes['partial']=packet['partial']
+                if packet.get('worker_timeline'):changes['worker_timeline']=packet['worker_timeline']
+                update_job(key,**changes)
             try:
                 phase='read_result'
                 result=call.get(timeout=0)
                 if not valid_result(result):raise RuntimeError('gpu_verification_failed')
-                with LOCK:job.update(status='completed',stage='completed',result=result)
+                update_job(key,status='completed',stage='completed',result=result)
                 break
             except modal.exception.FunctionTimeoutError:
-                with LOCK:job.update(status='failed',stage='job_timeout',error='job_timeout')
+                update_job(key,status='failed',stage='job_timeout',error='job_timeout')
                 break
             except (TimeoutError,modal.exception.TimeoutError):pass
-            time.sleep(1)
+            time.sleep(PROGRESS_INTERVAL)
     except Exception as exc:
         log_job_failure(key,phase,exc)
         code='compute_failed'
@@ -132,7 +170,7 @@ def run_job(key):
         if call:
             try:call.cancel(terminate_containers=True)
             except Exception:pass
-        with LOCK:JOBS[key].update(status='failed',stage=code,error=code)
+        update_job(key,status='failed',stage=code,error=code)
     finally:
         if updates is not None and call is not None:
             try:updates.pop(key,None)
@@ -175,7 +213,8 @@ def health():return {'status':'ok','version':'1.0.0'}
 def info():
     return {'version':'1.0.0','gpu_configured':gpu_configured(),'meta_configured':meta_ai.configured(),
         'categories':CATEGORIES,'presets':PRESETS,'model':meta_ai.configuration()[1],
-        'busy':ACTIVE is not None,'storage':'transient; download results before restart'}
+        'busy':ACTIVE is not None,'streaming':True,'delivery_version':'2026-10-22-live-results',
+        'storage':'transient; download results before restart'}
 @app.post('/api/plan')
 def plan(body:TextRequest,request:Request):
     rate('ai-global',10);rate(owner(request)+'-ai',5)
@@ -205,18 +244,51 @@ def submit(body:RunRequest,request:Request):
             old=next((k for k,v in JOBS.items() if v['status'] in TERMINAL),None)
             if old:JOBS.pop(old)
         job={'id':key,'spec':spec,'status':'running','stage':'connecting','created_at':time.time(),
-             '_owner':owner(request),'_language':body.language,'_cancel':False}
+             '_owner':owner(request),'_language':body.language,'_cancel':False,
+             '_started':time.monotonic(),'gateway_timeline':[{'stage':'connecting','gateway_ms':0}]}
         JOBS[key]=job;ACTIVE=key
         threading.Thread(target=run_job,args=(key,),daemon=True).start()
         return snapshot(job)
 @app.get('/api/jobs/{key}')
 def get_job(key:str,request:Request):
     with LOCK:return snapshot(lookup(request,key))
+
+async def stream_job(key,request):
+    loop=asyncio.get_running_loop();queue=asyncio.Queue(maxsize=1)
+    listener=(loop,queue)
+    with LOCK:LISTENERS.setdefault(key,set()).add(listener)
+    try:
+        while True:
+            if await request.is_disconnected():return
+            with LOCK:
+                job=JOBS.get(key)
+                if job is None or job.get('_owner')!=owner(request):
+                    payload={'status':'failed','stage':'job_expired','error':'job_expired'}
+                else:payload=snapshot(job)
+            yield 'data: '+json.dumps(payload,allow_nan=False,separators=(',',':'))+'\n\n'
+            if payload['status'] in TERMINAL:return
+            while True:
+                try:
+                    await asyncio.wait_for(queue.get(),timeout=15)
+                    break
+                except asyncio.TimeoutError:
+                    if await request.is_disconnected():return
+                    yield 'event: heartbeat\ndata: {}\n\n'
+    finally:
+        with LOCK:
+            listeners=LISTENERS.get(key,set());listeners.discard(listener)
+            if not listeners:LISTENERS.pop(key,None)
+
+@app.get('/api/jobs/{key}/events')
+async def events(key:str,request:Request):
+    with LOCK:lookup(request,key)
+    return StreamingResponse(stream_job(key,request),media_type='text/event-stream',
+        headers={'Cache-Control':'no-store','X-Accel-Buffering':'no'})
 @app.post('/api/jobs/{key}/cancel')
 def cancel(key:str,request:Request):
     with LOCK:
         job=lookup(request,key)
-        if job['status'] not in TERMINAL:job['_cancel']=True;job['stage']='cancelling'
+        if job['status'] not in TERMINAL:update_job(key,_cancel=True,stage='cancelling')
         return snapshot(job)
 @app.post('/api/jobs/{key}/explain')
 def explain(key:str,request:Request):
