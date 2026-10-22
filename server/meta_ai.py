@@ -1,5 +1,6 @@
 """Meta model adapter. Text/JSON only; no generated code is executed."""
 import json
+import logging
 import os
 import time
 from urllib.parse import urlsplit
@@ -7,12 +8,23 @@ import httpx
 from optimizer.specs import Spec
 from pydantic import ValidationError
 
+log=logging.getLogger('metaquant.ai')
+DEFAULT_MODEL='accounts/fireworks/models/muse-spark-open'
+
 class AIError(ValueError):
-    pass
+    def __init__(self,code,provider_status=None):
+        super().__init__(code)
+        self.provider_status=provider_status
+
+    def detail(self):
+        value={'code':str(self)}
+        if self.provider_status is not None:value['provider_status']=self.provider_status
+        return value
 
 def configuration():
-    base=os.getenv('META_API_BASE_URL','https://api.fireworks.ai/inference/v1').rstrip('/')
-    model=os.getenv('META_MODEL','accounts/fireworks/models/llama-v3p3-70b-instruct')
+    base=os.getenv('META_API_BASE_URL','https://api.fireworks.ai/inference/v1').strip().rstrip('/')
+    if base.endswith('/chat/completions'):base=base[:-len('/chat/completions')]
+    model=os.getenv('META_MODEL',DEFAULT_MODEL).strip()
     key=os.getenv('META_API_KEY','').strip()
     valid=urlsplit(base).scheme=='https' and bool(urlsplit(base).hostname)
     # This application is intended for a Meta model, not an arbitrary renamed provider.
@@ -20,25 +32,51 @@ def configuration():
 
 def configured():return configuration()[3]
 
+def provider_error(status):
+    if status==401:return 'meta_auth'
+    if status==403:return 'meta_access'
+    if status==402:return 'meta_quota'
+    if status==429:return 'meta_rate_limit'
+    if status==404:return 'meta_model_unavailable'
+    if status in (408,504):return 'meta_timeout'
+    if status==412:return 'meta_account'
+    if status in (400,413,422):return 'meta_request_rejected'
+    if status>=500:return 'meta_provider_unavailable'
+    return 'meta_api_error'
+
 def chat(system,user,json_mode=False):
     base,model,key,ok=configuration()
     if not ok:raise AIError('meta_not_configured')
     body={'model':model,'messages':[{'role':'system','content':system},{'role':'user','content':user}],
           'temperature':0.1,'max_tokens':2000}
+    # Muse Spark defaults to xhigh reasoning. Reserve room for a final answer
+    # and request brief reasoning explicitly instead of exhausting 2,000 tokens.
+    if model=='accounts/fireworks/models/muse-spark-open':
+        body.update(reasoning_effort='low',max_tokens=4096)
     if json_mode:body['response_format']={'type':'json_object'}
     start=time.perf_counter()
     try:
         with httpx.Client(timeout=60,follow_redirects=False) as client:
             r=client.post(base+'/chat/completions',headers={'Authorization':'Bearer '+key},json=body)
-        if r.status_code in (401,403):raise AIError('meta_auth')
-        if r.status_code in (402,429):raise AIError('meta_quota')
-        if r.status_code>=400:raise AIError('meta_api_error')
-        text=r.json()['choices'][0]['message']['content']
+        if r.status_code>=300:
+            code=provider_error(r.status_code)
+            # Never log the key, prompt, model response, or raw provider error body.
+            log.warning('Meta AI request failed: provider_http=%s category=%s',r.status_code,code)
+            raise AIError(code,r.status_code)
+        choice=r.json()['choices'][0]
+        if choice.get('finish_reason')=='length':raise AIError('meta_output_limit')
+        text=choice['message']['content']
         if not isinstance(text,str) or not text.strip():raise AIError('meta_format')
         return text,{'model':model,'elapsed_ms':1000*(time.perf_counter()-start),'api_called':True}
-    except (httpx.HTTPError,KeyError,IndexError,TypeError,ValueError) as e:
+    except httpx.TimeoutException:
+        log.warning('Meta AI request failed: category=meta_timeout')
+        raise AIError('meta_timeout') from None
+    except httpx.HTTPError:
+        log.warning('Meta AI request failed: category=meta_connection')
+        raise AIError('meta_connection') from None
+    except (KeyError,IndexError,TypeError,ValueError) as e:
         if isinstance(e,AIError):raise
-        raise AIError('meta_api_error') from None
+        raise AIError('meta_format') from None
 
 PLANNER='''You formulate bounded binary optimization problems for MetaQuant Forge.
 Return ONLY JSON {"status":"ready"|"needs_information"|"unsupported","message":string,"spec":object|null}.

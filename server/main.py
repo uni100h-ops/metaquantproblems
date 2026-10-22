@@ -220,7 +220,7 @@ def plan(body:TextRequest,request:Request):
     rate('ai-global',10);rate(owner(request)+'-ai',5)
     if not PLANNING.acquire(blocking=False):raise HTTPException(429,'busy')
     try:return meta_ai.formulate(body.question,body.language)
-    except meta_ai.AIError as e:raise HTTPException(422,str(e)) from None
+    except meta_ai.AIError as e:raise HTTPException(422,e.detail()) from None
     finally:PLANNING.release()
 @app.post('/api/validate')
 def validate(body:TextRequest):
@@ -303,7 +303,7 @@ def explain(key:str,request:Request):
         value=meta_ai.explain(result,language)
         with LOCK:job['explanation']=value
         return value
-    except meta_ai.AIError as e:raise HTTPException(422,str(e)) from None
+    except meta_ai.AIError as e:raise HTTPException(422,e.detail()) from None
     finally:PLANNING.release()
 
 app.mount('/',StaticFiles(directory=ROOT/'dist',html=True),name='web')
