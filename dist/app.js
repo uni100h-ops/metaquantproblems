@@ -128,7 +128,26 @@ $('run').onclick=async()=>{
  }finally{working=false;if(!active)stopClock();controls();renderStatus()}
 };
 $('cancel').onclick=async()=>{if(!active)return;try{await api('/api/jobs/'+active+'/cancel',{});status('cancelling')}catch(e){error(e.message)}};
-$('explain').onclick=async()=>{if(!lastJob||working)return;clearError();working=true;controls();$('explanationDialog').showModal();$('explanation').textContent=t('explaining');try{const d=await api('/api/jobs/'+lastJob+'/explain',{});$('explanation').textContent=d.text;result.meta_explanation=d}catch(e){$('explanation').textContent=t(e.message)+(Number.isInteger(e.providerStatus)?' (HTTP '+e.providerStatus+')':'');error(e.message)}finally{working=false;controls()}};
+$('explain').onclick=async()=>{
+ if(!lastJob||working)return;
+ clearError();working=true;controls();
+ const box=$('explanation');
+ box.textContent=t('explaining');
+ box.classList.toggle('loading',true);
+ box.setAttribute('aria-busy','true');
+ try{
+  $('explanationDialog').showModal();
+  const d=await api('/api/jobs/'+lastJob+'/explain',{});
+  box.textContent=d.text;result.meta_explanation=d;
+ }catch(e){
+  box.textContent=t(e.message)+(Number.isInteger(e.providerStatus)?' (HTTP '+e.providerStatus+')':'');
+  error(e.message);
+ }finally{
+  box.classList.toggle('loading',false);
+  box.setAttribute('aria-busy','false');
+  working=false;controls();
+ }
+};
 $('export').onclick=()=>{if(result)download('metaquantproblems-measurement.json',result)};
 $('csv').onclick=()=>{if(!result?.engines.traditional||!result?.engines.quantum)return;const a=result.engines.traditional.bits,b=result.engines.quantum.bits;download('metaquantproblems-decisions.csv','decision,cpu_binary,gpu_binary\n'+a.map((v,i)=>`${i+1},${v},${b[i]}`).join('\n')+'\n','text/csv;charset=utf-8')};
 document.querySelectorAll('[data-download]').forEach(b=>b.onclick=()=>{const name=b.dataset.download;if(result?.engines[name])download('metaquantproblems-'+name+'.json',{problem:result.problem,hardware:result.hardware,engine:result.engines[name],complete:result.complete})});

@@ -20,15 +20,22 @@
 @media(max-width:540px){.problem-picker{gap:8px}.example-details{max-height:none}}
 
 /* Prominent Meta AI explanation action. */
-#explain{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:240px;max-width:100%;padding:11px 20px;border:2px solid var(--blue);border-radius:8px;background:var(--blue);color:#fff;font-size:15px;line-height:1.2;font-weight:800;letter-spacing:.25px;text-transform:uppercase;text-align:center}
+#explain{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:240px;max-width:100%;padding:11px 20px;border:2px solid var(--blue);border-radius:8px;background:var(--blue);color:#fff;font-size:15px;line-height:1.2;font-weight:800;letter-spacing:.25px;text-transform:none;text-align:center}
 #explain:hover:not(:disabled){background:#0654d6;border-color:#0654d6;color:#fff}
 #explain:disabled{background:var(--blue);border-color:var(--blue);color:#fff;opacity:.65;cursor:not-allowed}
 @media(max-width:540px){#explain{width:100%;min-width:0;margin-left:0}}
 
-/* Readable model attribution immediately below its action. */
-.explain-action{display:flex;flex-direction:column;align-items:stretch;gap:5px;flex:0 1 330px;min-width:0;max-width:100%;margin-left:auto}
-.explain-action #explain{width:100%;min-width:0;margin-left:0}
-.meta-model-note{margin:0;color:#000;font-size:12px;line-height:1.4;font-weight:400;text-align:left}
+/* Center the explanation action within the complete results panel. */
+.result-actions{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:5px 8px}
+.explain-action{display:contents}
+.explain-action #explain{grid-column:2;grid-row:1;width:330px;min-width:0;max-width:100%;margin:0;justify-self:center}
+.meta-model-note{grid-column:1/-1;grid-row:2;justify-self:center;max-width:100%;margin:0;color:#000;font-size:12px;line-height:1.4;font-weight:400;text-align:center;white-space:nowrap}
 .meta-model-note strong{font-weight:700}
-.result-actions #showEvidence{align-self:flex-start}
-@media(max-width:540px){.explain-action{flex-basis:100%;width:100%;margin-left:0}}
+.result-actions #showEvidence{grid-column:1;grid-row:1;justify-self:start;max-width:100%;align-self:center}
+@media(max-width:1199px){.meta-model-note{white-space:normal}}
+@media(max-width:700px){.result-actions{grid-template-columns:minmax(0,1fr)}.result-actions #showEvidence{grid-column:1;grid-row:1}.explain-action #explain{grid-column:1;grid-row:2}.meta-model-note{grid-column:1;grid-row:3}}
+
+/* Visible feedback while the explanation API request is pending. */
+.explanation.loading{display:flex;align-items:center;gap:12px;min-height:30px}
+.explanation.loading::before{content:"";display:block;flex:0 0 22px;width:22px;height:22px;border:3px solid #cfdef7;border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@media(prefers-reduced-motion:reduce){.explanation.loading::before{animation:none}}
