@@ -70,3 +70,12 @@ footer{align-items:center}
 .intro-logo-meta{color:var(--blue)}
 .intro-logo-nvidia{color:#76b900}
 .intro-logo-modal{color:#000}
+
+/* Center all provider links at the bottom of the page. */
+footer{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 16px}
+footer #connection{grid-column:1;min-width:0}
+.footer-providers{grid-column:2;gap:6px 18px;justify-content:center}
+.footer-providers .provider-brand{min-height:22px;gap:5px}
+.footer-providers .provider-icon{width:22px;height:20px;flex-basis:22px}
+.footer-providers .meta-brand .provider-icon{color:var(--blue)}
+@media(max-width:1000px){footer{grid-template-columns:minmax(0,1fr)}.footer-providers{grid-column:1;justify-self:center}}
