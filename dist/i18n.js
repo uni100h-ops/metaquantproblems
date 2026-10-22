@@ -17,7 +17,7 @@ window.MQ_I18N={
     "evidence": "Data and verification",
     "scope": "Compare time and quality together. Quantum-inspired is classical computation, not quantum hardware. Neither heuristic is guaranteed to win.",
     "independent": "· Independent project",
-    "method": "Both engines receive the same QUBO. Three runs per engine, concurrent isolated processes. The displayed time is the sum of solver calls; warm-up, Meta API and network latency are excluded. Full request time is shown separately.",
+    "method": "Both engines receive the same QUBO and run in separate processes. Three CPU trials run in parallel; three GPU trials run sequentially. The main time and speed comparison measure elapsed time to finish all three trials, including checks and decoding. The sum and median of individual call durations are shown separately. Warm-up, Meta API and network latency are excluded; full request time is shown separately.",
     "budgets": "Dense benchmarks: CPU 8 reads × 200 sweeps; GPU 128 agents × 1,000 steps. These are different algorithms and budgets, not equal-work experiments.",
     "dataNote": "Examples are synthetic. User input is validated before execution. Downloaded results include seeds, versions, device evidence and the problem hash. Large examples have no proven optimum.",
     "scenario": "Problem",
@@ -97,7 +97,9 @@ window.MQ_I18N={
     "category_custom": "Advanced QUBO",
     "example_custom": "Choose a binary mode, 0 or 1, for each of 2,048 synthetic sensors. The QUBO matrix combines local preferences with positive and negative pair interactions. Both solvers minimize the same quadratic objective. The result is a binary assignment and its measured cost, not a physical sensor simulation.",
     "problemDetails": "What does this example solve?",
-    "ownExplanation": "Describe the decisions, numerical data, objective and constraints of your problem. Meta AI proposes a supported binary formulation and requests any missing information. RUN validates it before sending the same problem to both solvers. Request synthetic data explicitly if you want a generated example."
+    "ownExplanation": "Describe the decisions, numerical data, objective and constraints of your problem. Meta AI proposes a supported binary formulation and requests any missing information. RUN validates it before sending the same problem to both solvers. Request synthetic data explicitly if you want a generated example.",
+    "elapsedTrials": "Time to finish · 3 runs",
+    "sumTrials": "Sum of call durations"
   },
   "es": {
     "technical": "Datos técnicos",
@@ -117,7 +119,7 @@ window.MQ_I18N={
     "evidence": "Datos y verificación",
     "scope": "Compara tiempo y calidad. Inspiración cuántica significa cálculo clásico, no hardware cuántico. Ninguna heurística tiene garantizada la victoria.",
     "independent": "· Proyecto independiente",
-    "method": "Ambos motores reciben el mismo QUBO. Tres ejecuciones por motor en procesos aislados y paralelos. El tiempo mostrado suma las llamadas al motor; excluye calentamiento, API de Meta y red. La duración total de la solicitud se muestra aparte.",
+    "method": "Ambos motores reciben el mismo QUBO y se ejecutan en procesos separados. Las tres pruebas CPU se ejecutan en paralelo; las tres GPU, en secuencia. El tiempo principal y la comparación de velocidad miden la duración real hasta terminar las tres pruebas, con verificaciones y decodificación. La suma y mediana de duraciones individuales se muestran aparte. Se excluyen calentamiento, API de Meta y red; el tiempo total de la solicitud se muestra por separado.",
     "budgets": "Pruebas densas: CPU 8 intentos × 200 barridos; GPU 128 agentes × 1.000 pasos. Son algoritmos y presupuestos distintos, no experimentos de trabajo equivalente.",
     "dataNote": "Los ejemplos son sintéticos. Los datos del usuario se validan antes de ejecutar. Las descargas incluyen semillas, versiones, pruebas del dispositivo y la huella del problema. Los ejemplos grandes no tienen un óptimo demostrado.",
     "scenario": "Problema",
@@ -197,7 +199,9 @@ window.MQ_I18N={
     "category_custom": "QUBO avanzado",
     "example_custom": "Elige el modo binario, 0 o 1, de cada uno de los 2.048 sensores sintéticos. La matriz QUBO combina preferencias locales e interacciones positivas y negativas. Ambos métodos minimizan el mismo objetivo cuadrático. Se obtiene una asignación binaria y su coste medido, no una simulación física de sensores.",
     "problemDetails": "¿Qué resuelve este ejemplo?",
-    "ownExplanation": "Describe las decisiones, los datos numéricos, el objetivo y las restricciones. Meta AI propone una formulación binaria admitida y solicita la información que falte. RUN la valida antes de enviar el mismo problema a ambos métodos. Pide datos sintéticos expresamente si quieres un ejemplo generado."
+    "ownExplanation": "Describe las decisiones, los datos numéricos, el objetivo y las restricciones. Meta AI propone una formulación binaria admitida y solicita la información que falte. RUN la valida antes de enviar el mismo problema a ambos métodos. Pide datos sintéticos expresamente si quieres un ejemplo generado.",
+    "elapsedTrials": "Tiempo para finalizar · 3 ejecuciones",
+    "sumTrials": "Suma de duraciones"
   },
   "fr": {
     "technical": "Données techniques",
@@ -263,7 +267,10 @@ window.MQ_I18N={
     "category_custom": "QUBO avancé",
     "example_custom": "Choisissez le mode binaire, 0 ou 1, de chacun des 2 048 capteurs synthétiques. La matrice QUBO combine des préférences locales et des interactions positives ou négatives. Les deux méthodes minimisent le même objectif quadratique. Le résultat est une affectation binaire avec un coût mesuré, pas une simulation physique.",
     "problemDetails": "Que résout cet exemple ?",
-    "ownExplanation": "Décrivez les décisions, les données numériques, l’objectif et les contraintes. Meta AI propose une formulation binaire prise en charge et demande les informations manquantes. RUN la valide avant d’envoyer le même problème aux deux méthodes. Demandez explicitement des données synthétiques pour un exemple généré."
+    "ownExplanation": "Décrivez les décisions, les données numériques, l’objectif et les contraintes. Meta AI propose une formulation binaire prise en charge et demande les informations manquantes. RUN la valide avant d’envoyer le même problème aux deux méthodes. Demandez explicitement des données synthétiques pour un exemple généré.",
+    "elapsedTrials": "Temps écoulé · 3 exécutions",
+    "sumTrials": "Somme des durées",
+    "method": "Les deux moteurs reçoivent le même QUBO dans des processus séparés. Les trois essais CPU sont parallèles ; les trois essais GPU sont séquentiels. Le temps principal et le rapport de vitesse mesurent le temps écoulé pour terminer les trois essais, vérifications et décodage inclus. Somme et médiane des durées individuelles sont affichées séparément. Préchauffage, API Meta et réseau sont exclus ; le temps total de la requête est indiqué à part."
   },
   "de": {
     "technical": "Technische Daten",
@@ -329,6 +336,9 @@ window.MQ_I18N={
     "category_custom": "Erweitertes QUBO",
     "example_custom": "Wähle den binären Modus 0 oder 1 für jeden der 2.048 synthetischen Sensoren. Die QUBO-Matrix verbindet lokale Präferenzen mit positiven und negativen Wechselwirkungen. Beide Verfahren minimieren dasselbe quadratische Ziel. Das Ergebnis ist eine binäre Zuordnung mit gemessenen Kosten, keine physikalische Sensorsimulation.",
     "problemDetails": "Was löst dieses Beispiel?",
-    "ownExplanation": "Beschreibe Entscheidungen, numerische Daten, Ziel und Einschränkungen. Meta AI schlägt eine unterstützte binäre Formulierung vor und fragt nach fehlenden Informationen. RUN prüft sie, bevor beide Verfahren dasselbe Problem erhalten. Fordere synthetische Daten ausdrücklich an, wenn du ein generiertes Beispiel möchtest."
+    "ownExplanation": "Beschreibe Entscheidungen, numerische Daten, Ziel und Einschränkungen. Meta AI schlägt eine unterstützte binäre Formulierung vor und fragt nach fehlenden Informationen. RUN prüft sie, bevor beide Verfahren dasselbe Problem erhalten. Fordere synthetische Daten ausdrücklich an, wenn du ein generiertes Beispiel möchtest.",
+    "elapsedTrials": "Dauer bis zum Abschluss · 3 Läufe",
+    "sumTrials": "Summe der Laufzeiten",
+    "method": "Beide Verfahren erhalten dasselbe QUBO in getrennten Prozessen. Drei CPU-Läufe arbeiten parallel; drei GPU-Läufe nacheinander. Hauptzeit und Geschwindigkeitsvergleich messen die verstrichene Zeit bis zum Abschluss aller drei Läufe einschließlich Prüfung und Dekodierung. Summe und Median der einzelnen Laufzeiten stehen separat. Aufwärmen, Meta-API und Netzwerk sind ausgeschlossen; die gesamte Anfragezeit wird separat angezeigt."
   }
 };
