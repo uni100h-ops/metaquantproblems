@@ -92,6 +92,7 @@ def test_bundle_gpu_stays_sequential_and_cpu_uses_three_threads(monkeypatch):
     calls = []
     fake = SimpleNamespace(classical=object(),bifurcation=object(),REPEATS=3)
     monkeypatch.setitem(sys.modules,'optimizer.engines',fake)
+    monkeypatch.setitem(sys.modules,'optimizer.cpu_engines',fake)
     rows = [dict(bits=[0]*4,energy=p.energy([0]*4),elapsed_ms=t,seed=10+i)
             for i,t in enumerate([11,12,13])]
     def collect(solver,problem,seed,repetitions,workers):
