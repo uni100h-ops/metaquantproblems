@@ -9,18 +9,15 @@ from importlib.metadata import version
 import numpy as np
 import torch
 import simulated_bifurcation as sb
-import dimod
-from dwave.samplers import SimulatedAnnealingSampler
 from .problems import Problem, exact_reference
-from .channel_engines import run_cpu, run_gpu, CPU_PROFILE, GPU_PROFILE
+from .channel_engines import run_gpu, CPU_PROFILE, GPU_PROFILE
+from .cpu_engines import classical, channel_result, AGENTS, SA_SWEEPS
+from .live import REPEATS
 
 THREADS = 1  # Match the independent notebook's numerical-library configuration.
 torch.set_num_threads(THREADS)
-AGENTS = 32
-SA_SWEEPS = 1000
 SB_MAX_STEPS = 10000
 SB_TIMEOUT = 3.0
-REPEATS = 3
 _gpu_verified = False
 
 
@@ -68,26 +65,6 @@ def sync():
     device_name()
     torch.cuda.synchronize(0)
 
-
-def classical(p: Problem, seed: int):
-    if p.spec.variant!='standard':
-        from .dense_engines import classical_dense
-        return classical_dense(p,seed)
-    if p.spec.kind == 'channels' and not p.spec.user_data():
-        raw = run_cpu(p.weights, CPU_PROFILE, seed, None, 1)
-        return channel_result(raw, p)
-    start = time.perf_counter()
-    # Full symmetric matrix convention -> upper-triangle binary quadratic model.
-    linear = {i: float(p.q[i,i]) for i in range(p.n)}
-    quadratic = {(i,j): float(p.q[i,j]+p.q[j,i]) for i in range(p.n)
-                 for j in range(i+1,p.n) if p.q[i,j]+p.q[j,i] != 0}
-    bqm = dimod.BinaryQuadraticModel(linear, quadratic, p.offset, dimod.BINARY)
-    samples = SimulatedAnnealingSampler().sample(bqm, num_reads=AGENTS, num_sweeps=SA_SWEEPS,
-                                                  seed=seed, randomize_order=True)
-    sample = samples.first.sample
-    x = np.array([sample[i] for i in range(p.n)],dtype=int)
-    return {'bits': x.tolist(), 'elapsed_ms': (time.perf_counter()-start)*1000,
-            'seed': seed, 'energy': p.energy(x), 'warnings': []}
 
 
 def bifurcation(p: Problem, seed: int):
@@ -144,14 +121,6 @@ def bifurcation(p: Problem, seed: int):
 _warmed = False
 
 
-def channel_result(raw, p):
-    bits = ((np.asarray(raw['spins'], dtype=int) + 1) // 2).tolist()
-    value = p.energy(bits)
-    if abs(value - raw['remaining_interference']) > 1e-6:
-        raise RuntimeError('objective_verification_failed')
-    return {**{k: v for k, v in raw.items() if k != 'spins'}, 'bits': bits,
-            'energy': value, 'elapsed_ms': raw['total_ms'],
-            'independent_cpu_energy': value, 'warnings': raw.get('warnings', [])}
 
 def warmup():
     global _warmed
@@ -181,7 +150,7 @@ def compare(p: Problem, seed=2026, progress=None, cancelled=None, partial=None):
     progress('running')
     engines = {}
     # Both bundles start independently in warm, persistent processes.
-    from .live import run_bundles
+    from .live import run_bundles, CPU_TRIAL_WORKERS
     partial_base = {'schema_version':'metaquant-forge-v1', 'problem':p.public(),
                     'hardware':hardware(), 'reference':{'known':False,'energy':None,
                     'method':'pending','elapsed_ms':0}, 'warmup_ms':warmup_ms,
@@ -203,32 +172,36 @@ def compare(p: Problem, seed=2026, progress=None, cancelled=None, partial=None):
         engine.update(optimality_gap_absolute=gap,
             optimality_gap_percent=100*gap/denominator if gap is not None and denominator>1e-9 else None,
             at_proven_optimum=bool(gap is not None and gap<1e-6))
-    order = 'concurrent CPU/GPU processes, three calls each; actual completion order recorded per engine'
+    order = 'concurrent CPU/GPU processes; three CPU trials on three threads, three GPU trials sequentially; actual engine completion order recorded'
     reference['elapsed_ms'] = (time.perf_counter()-verify_start)*1000
     c, q = engines['traditional'], engines['quantum']
-    ratio = c['solver_ms']/max(q['solver_ms'],1e-9)
+    ratio = c['bundle_wall_ms']/max(q['bundle_wall_ms'],1e-9)
     result = {'schema_version': 'metaquant-forge-v1', 'problem': p.public(), 'engines': engines,
             'reference': reference, 'hardware': hardware(), 'warmup_ms': warmup_ms,
             'comparison_wall_ms': (time.perf_counter()-started)*1000,
-            'comparison': {'sb_speed_ratio': ratio, 'sb_energy_minus_traditional': q['energy']-c['energy'],
+            'comparison': {'sb_speed_ratio': ratio, 'speed_ratio_basis':'bundle_wall_ms',
+                           'sb_summed_call_ratio':c['solver_ms']/max(q['solver_ms'],1e-9),
+                           'sb_energy_minus_traditional': q['energy']-c['energy'],
                            'both_feasible': c['decoded']['feasible'] and q['decoded']['feasible'],
                            'same_objective': abs(q['energy']-c['energy']) < 1e-6},
             'complete':True, 'protocol': {'execution':'concurrent_processes', 'repetitions': REPEATS, 'seed': seed, 'execution_order': order,
+                         'performance_version':'2026-10-22-parallel-cpu-trials',
+                         'traditional_trial_workers':min(CPU_TRIAL_WORKERS,REPEATS),
+                         'traditional_workers_per_trial':1,'sb_trial_workers':1,
                          'candidates_per_run': AGENTS, 'traditional_sweeps': SA_SWEEPS,
                          'sb_max_steps': SB_MAX_STEPS, 'sb_timeout_seconds': SB_TIMEOUT,
                          'sb_mode': 'ballistic', 'sb_early_stopping': True,
                          'same_problem_sha256': p.digest, 'repair_or_local_polish': False,
-                         'timing': 'Total of 3 solver calls; each includes representation conversion, transfers and solution extraction. Warmup, reference, Meta API and network excluded.',
+                         'timing': 'Displayed time and speed ratio use bundle_wall_ms: elapsed time to complete all 3 trials, independent checks and decoding. CPU trials overlap. solver_ms is the sum of individual call durations, not CPU time or request latency. Warmup, reference, IPC, Meta API and HTTP are excluded; total request time is shown separately.',
                          'sb_compute': 'NVIDIA GPU: normalization, QUBO/Ising tensors, oscillator dynamics, candidate selection, binary validation and objective. Python control, input preparation, JSON and independent reference verification use CPU.',
-                         'gpu_stream_timing': 'GPU event interval, including host dispatch gaps; not an isolated sum of kernel durations. The comparison uses full solver wall time for both engines.',
+                         'gpu_stream_timing': 'GPU event interval, including host dispatch gaps; not an isolated sum of kernel durations. The displayed comparison uses the complete three-trial bundle wall time for each engine.',
                          'scope': 'Configured heuristics, not equal stopping criteria or a claim against all classical solvers. Steps and sweeps are different units. Best solution across 3 runs; median also exported.'}}
     if (p.spec.kind == 'channels' and not p.spec.user_data()) or p.spec.variant!='standard':
         result['protocol'].update(
             candidates_per_run=None, traditional_candidates=8, sb_candidates=128,
-            traditional_sweeps=200, traditional_workers=1,
+            traditional_sweeps=200, traditional_workers=min(CPU_TRIAL_WORKERS,REPEATS),
             sb_max_steps=1000, sb_timeout_seconds=None, sb_early_stopping=False,
             traditional_profile=CPU_PROFILE, sb_profile=GPU_PROFILE,
-            timing='Sum of 3 matrix-to-solution calls, including representation, GPU transfers, solve and independent verification. Same input problem. Generation, warmup, IPC and HTTP excluded.',
             scope='CPU_SA_8x200 and SB_GPU_128x1000. All dense examples use these fixed profiles. Measure each new instance; no known optimum or universal speed advantage. The baseline is one configured CPU heuristic, not every classical solver.',
             sb_compute='NVIDIA GPU: QUBO/Ising conversion, dynamics, candidate selection and objective; host input preparation, Python control and independent checks use CPU. No CPU fallback.')
         result['comparison']['sb_objective_difference_percent'] = 100*(q['energy']-c['energy'])/abs(c['energy']) if c['energy'] else None

@@ -1,19 +1,24 @@
 """Warm isolated solver processes, real completion order, no artificial delays."""
-from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, wait, FIRST_COMPLETED
 import multiprocessing as mp
 import time
 import numpy as np
 
 _pools={}
 _cancel=None
+CPU_TRIAL_WORKERS=3
+REPEATS=3
 
 def initialize(name, cancel):
     global _cancel
     _cancel=cancel
-    from .engines import verify_gpu, classical
     from .problems import Spec, build_problem
-    if name=='quantum': verify_gpu()
-    else: classical(build_problem(Spec(kind='channels',size=4,seed=3)),3)
+    if name=='quantum':
+        from .engines import verify_gpu
+        verify_gpu()
+    else:
+        from .cpu_engines import classical
+        classical(build_problem(Spec(kind='channels',size=4,seed=3)),3)
 
 def ready():
     return True
@@ -39,20 +44,40 @@ def close():
         executor.shutdown(wait=True,cancel_futures=True)
     _pools.clear()
 
-def bundle(name,p,seed):
-    from .engines import classical, bifurcation, REPEATS
-    rows=[]
-    started=time.perf_counter()
-    for i in range(REPEATS):
+def collect_trials(solver,p,seed,repetitions,workers=1):
+    """Independent seeds; native dwave-samplers 1.8.0 releases the GIL.
+
+    Its RNG is thread-local. Each call owns its prepared model and initial
+    states; only the read-only Problem is shared. Keep rows in seed order.
+    GPU trials remain sequential because they share the CUDA RNG/context.
+    """
+    def trial(index):
         if _cancel is not None and _cancel.is_set(): raise RuntimeError('cancelled')
-        row=(classical if name=='traditional' else bifurcation)(p,seed+i)
+        row=solver(p,seed+index)
+        if _cancel is not None and _cancel.is_set(): raise RuntimeError('cancelled')
         checked=p.energy(row['bits'])
         if not np.isclose(checked,row['energy'],rtol=1e-9,atol=1e-6):
             raise RuntimeError('objective_verification_failed')
         row['independent_cpu_energy']=checked
-        rows.append(row)
+        return row
+    if workers==1:
+        return [trial(i) for i in range(repetitions)]
+    with ThreadPoolExecutor(max_workers=min(workers,repetitions),
+                            thread_name_prefix='cpu-trial') as executor:
+        return list(executor.map(trial,range(repetitions)))
+
+def bundle(name,p,seed):
+    if name=='traditional':
+        from .cpu_engines import classical as solver
+    else:
+        from .engines import bifurcation as solver
+    started=time.perf_counter()
+    workers=min(CPU_TRIAL_WORKERS,REPEATS) if name=='traditional' else 1
+    rows=collect_trials(solver,p,seed,REPEATS,workers)
     best=min(rows,key=lambda row:row['energy'])
     return {**best,'decoded':p.decode(best['bits']),'trials':rows,
+            'trial_workers':workers,
+            'trial_execution':'parallel_threads' if workers>1 else 'sequential',
             'solver_ms':sum(row['elapsed_ms'] for row in rows),
             'median_ms':float(np.median([row['elapsed_ms'] for row in rows])),
             'optimality_gap_absolute':None,'optimality_gap_percent':None,
